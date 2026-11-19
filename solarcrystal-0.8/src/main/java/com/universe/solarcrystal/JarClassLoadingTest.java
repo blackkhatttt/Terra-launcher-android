@@ -40,6 +40,14 @@ public final class JarClassLoadingTest {
                 return output.toString();
             }
 
+            ClassFileInspector.InspectionReport inspection = ClassFileInspector.inspect(fixture);
+            boolean structure = inspection.hasMethod("callsHelper", "(I)I")
+                    && inspection.hasMethod("helper", "(I)I")
+                    && inspection.references(CLASS_NAME, "helper", "(I)I");
+            output.append("--- CLASS FILE INSPECTION ---\\n").append(inspection)
+                  .append("\\nSame-class helper reference: ")
+                  .append(structure ? "PASS" : "FAIL").append("\\n\\n");
+
             boolean multiply = check(fixture, "multiply", "(II)I",
                     new int[] {6, 7}, 42, output);
             boolean remainder = check(fixture, "remainder", "(II)I",
@@ -55,9 +63,9 @@ public final class JarClassLoadingTest {
                     && classResult.startsWith("SolarCrystal Class Resolver: OK");
             boolean methodOk = methodResult != null
                     && methodResult.startsWith("SolarCrystal Method Resolver: OK");
-            output.append(classOk && methodOk && multiply && remainder
+            output.append(classOk && methodOk && structure && multiply && remainder
                     && bitwise && shift && branch
-                    ? "RESULT: PASS — JAR loading, resolution and expanded VM tests passed"
+                    ? "RESULT: PASS — JAR loading, metadata inspection, resolution and integer VM tests passed"
                     : "RESULT: FAIL — one or more JAR/VM tests failed");
         } catch (IOException error) {
             output.append("RESULT: FAIL — ").append(error.getMessage());
