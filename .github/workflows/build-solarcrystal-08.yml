@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.8 - SolarCrystal JAR Reader
+name: Build Universe Launcher 0.8 - SolarCrystal JAR Class Loader
 
 on:
   workflow_dispatch:
@@ -37,15 +37,21 @@ jobs:
           echo "PROJECT_DIR=$PROJECT" >> "$GITHUB_ENV"
           echo "SolarCrystal source: $PROJECT"
 
-      - name: Integrate SolarCrystal 0.8 JAR reader
+      - name: Integrate SolarCrystal 0.8 JAR and class loaders
         shell: bash
         run: |
           set -euo pipefail
           DEST="$PROJECT_DIR/terra-android/src/main/java/com/universe/solarcrystal"
           mkdir -p "$DEST"
           cp solarcrystal-0.8/src/main/java/com/universe/solarcrystal/JarArchiveReader.java "$DEST/"
+          cp solarcrystal-0.8/src/main/java/com/universe/solarcrystal/ClassFileLoader.java "$DEST/"
           grep -q "class JarArchiveReader" "$DEST/JarArchiveReader.java"
-          echo "JAR reader integrated."
+          grep -q "class ClassFileLoader" "$DEST/ClassFileLoader.java"
+          sed -i "s/versionCode 7/versionCode 8/" "$PROJECT_DIR/terra-android/build.gradle"
+          sed -i 's/versionName "0.7.0"/versionName "0.8.0"/' "$PROJECT_DIR/terra-android/build.gradle"
+          sed -i "s/VERSION 0.7/VERSION 0.8/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          sed -i "s/SOLARCRYSTAL 0.7/SOLARCRYSTAL 0.8/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          echo "JAR reader and class loader integrated."
 
       - name: Set up JDK
         uses: actions/setup-java@v4
