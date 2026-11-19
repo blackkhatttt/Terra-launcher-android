@@ -56,8 +56,8 @@ public final class JarClassLoadingTest {
                             "(II)I",
                             new int[] { 6, 7 }
                     );
-            output.append("--- BYTECODE EXECUTION ---\\n")
-                  .append(executionResult).append("\\n\\n");
+            output.append("--- BYTECODE EXECUTION ---\n")
+                  .append(executionResult).append("\n\n");
 
             boolean classOk = classResult != null
                     && classResult.startsWith("SolarCrystal Class Resolver: OK");
