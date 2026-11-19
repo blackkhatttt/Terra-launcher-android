@@ -10,7 +10,7 @@ if "import com.universe.solarcrystal.JarClassLoadingTest;" not in source:
         raise SystemExit("Could not find NativeBridge import in MainActivity.java")
     source = source.replace(
         import_line,
-        import_line + "\\nimport com.universe.solarcrystal.JarClassLoadingTest;",
+        import_line + "\nimport com.universe.solarcrystal.JarClassLoadingTest;",
         1,
     )
 
