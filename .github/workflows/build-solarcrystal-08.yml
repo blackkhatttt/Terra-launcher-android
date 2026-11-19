@@ -1,0 +1,83 @@
+name: Build Universe Launcher 0.8 - SolarCrystal JAR Reader
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - solarcrystal-0.8
+
+permissions:
+  contents: read
+
+env:
+  JAVA_VERSION: '17'
+  GRADLE_VERSION: '8.10.2'
+  ANDROID_NDK_VERSION: '26.1.10909125'
+  ANDROID_CMAKE_VERSION: '3.22.1'
+
+jobs:
+  build:
+    name: Build and verify SolarCrystal 0.8
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 0.8 branch
+        uses: actions/checkout@v4
+
+      - name: Extract SolarCrystal 0.7 baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          ZIP="$GITHUB_WORKSPACE/UniverseLauncher-0.7-SolarCrystal-0.7.zip"
+          test -f "$ZIP"
+          mkdir -p "$RUNNER_TEMP/sc08"
+          unzip -q "$ZIP" -d "$RUNNER_TEMP/sc08"
+          PROJECT="$(find "$RUNNER_TEMP/sc08" -type f -name settings.gradle -print -quit | xargs -r dirname)"
+          test -n "$PROJECT"
+          test -f "$PROJECT/terra-android/build.gradle"
+          echo "PROJECT_DIR=$PROJECT" >> "$GITHUB_ENV"
+          echo "SolarCrystal source: $PROJECT"
+
+      - name: Integrate SolarCrystal 0.8 JAR reader
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEST="$PROJECT_DIR/terra-android/src/main/java/com/universe/solarcrystal"
+          mkdir -p "$DEST"
+          cp solarcrystal-0.8/src/main/java/com/universe/solarcrystal/JarArchiveReader.java "$DEST/"
+          grep -q "class JarArchiveReader" "$DEST/JarArchiveReader.java"
+          echo "JAR reader integrated."
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+
+      - name: Install Android build tools
+        shell: bash
+        run: |
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;${ANDROID_NDK_VERSION}" "cmake;${ANDROID_CMAKE_VERSION}"
+
+      - name: Set up Gradle
+        uses: gradle/gradle-build-action@v3
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+
+      - name: Build Android APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PROJECT_DIR"
+          gradle --no-daemon --stacktrace :terra-android:assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Universe-Launcher-SolarCrystal-0.8
+          path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
