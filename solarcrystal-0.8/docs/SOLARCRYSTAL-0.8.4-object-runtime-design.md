@@ -67,3 +67,18 @@ Implement in dependency order, with tests after each group:
 ## Non-goals
 
 This milestone does not provide general JVM object compatibility, inheritance dispatch, arrays, strings, reflection, class initialization, garbage collection, JDK classes, LWJGL, or Minecraft compatibility. It is a first controlled object subset only.
+
+
+## 0.8.4a implementation status
+
+The first native foundation is now present:
+
+- `ObjectHeap` assigns stable, nonzero 32-bit object IDs; IDs are not native pointers.
+- Each instance stores its class identity and named integer fields.
+- Allocation is bounded to 4096 objects per heap.
+- Field reads and writes validate null/invalid IDs, class identity, and field existence.
+- Duplicate field declarations are rejected.
+- A host-side C++ regression test covers allocation, default values, field mutation, invalid references, wrong class, missing fields, duplicate fields, and the heap capacity limit.
+- The Android native CMake integration script adds `object_heap.cpp` to the SolarCrystal library.
+
+This is the heap foundation only. The existing interpreter still uses int32-only locals and operand stacks; `new`, reference load/store, `invokespecial`, `getfield`, and `putfield` are not yet connected to bytecode execution. The next 0.8.4 increment is the tagged VM value model and shared execution context.
