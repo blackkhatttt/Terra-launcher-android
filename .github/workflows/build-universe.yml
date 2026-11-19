@@ -127,6 +127,33 @@ jobs:
             "ndk;${ANDROID_NDK_VERSION}" \
             "cmake;${ANDROID_CMAKE_VERSION}"
 
+      - name: Clean native build directories
+        shell: bash
+        run: |
+          set -e
+
+          echo "Removing previous native build files..."
+
+          rm -rf "$PROJECT_DIR/terra-android/.cxx"
+          rm -rf "$PROJECT_DIR/terra-android/build"
+          rm -rf "$PROJECT_DIR/terra-android/.externalNativeBuild"
+          rm -rf "$PROJECT_DIR/terra-core/build"
+
+          echo "Native build directories cleaned."
+
+      - name: Normalize source timestamps
+        shell: bash
+        run: |
+          set -e
+
+          echo "Normalizing source file timestamps..."
+
+          find "$PROJECT_DIR" \
+            -path "$PROJECT_DIR/.git" -prune -o \
+            -type f -exec touch {} +
+
+          echo "Source timestamps normalized."
+
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v3
         with:
@@ -135,8 +162,10 @@ jobs:
       - name: Build Universe Launcher
         shell: bash
         run: |
+          set -e
           cd "$PROJECT_DIR"
-          gradle --no-daemon :terra-android:assembleDebug
+
+          gradle --no-daemon --stacktrace :terra-android:assembleDebug
 
       - name: Locate APK
         id: apk
