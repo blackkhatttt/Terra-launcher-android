@@ -36,6 +36,10 @@ jobs:
           test -f "$PROJECT/terra-android/build.gradle"
           echo "PROJECT_DIR=$PROJECT" >> "$GITHUB_ENV"
           echo "SolarCrystal source: $PROJECT"
+          cd "$PROJECT"
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_082.py"
+          grep -q "case 0x70:" terra-android/src/main/cpp/vm_runtime.cpp
+          echo "SolarCrystal 0.8.2 integer opcodes integrated."
 
       - name: Set up JDK
         uses: actions/setup-java@v4
