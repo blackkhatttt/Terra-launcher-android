@@ -5,6 +5,7 @@ import android.content.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 
 /**
  * On-device integration test: reads a small JAR asset, registers its classes,
@@ -40,14 +41,35 @@ public final class JarClassLoadingTest {
             output.append("--- METHOD RESOLUTION ---\n")
                   .append(methodResult).append("\n\n");
 
+            Map<String, byte[]> classEntries =
+                    JarArchiveReader.readClassEntries(jarBytes);
+            byte[] fixtureBytes = classEntries.get("SolarCrystalJarFixture.class");
+            if (fixtureBytes == null) {
+                output.append("RESULT: FAIL — fixture class missing from JAR");
+                return output.toString();
+            }
+
+            String executionResult =
+                    NativeBridge.nativeExecuteClassMethodWithArgs(
+                            fixtureBytes,
+                            "multiply",
+                            "(II)I",
+                            new int[] { 6, 7 }
+                    );
+            output.append("--- BYTECODE EXECUTION ---\\n")
+                  .append(executionResult).append("\\n\\n");
+
             boolean classOk = classResult != null
                     && classResult.startsWith("SolarCrystal Class Resolver: OK");
             boolean methodOk = methodResult != null
                     && methodResult.startsWith("SolarCrystal Method Resolver: OK");
+            boolean executionOk = executionResult != null
+                    && executionResult.startsWith("SolarCrystal Class VM: OK")
+                    && executionResult.contains("Return value: 42");
 
-            output.append(classOk && methodOk
-                    ? "RESULT: PASS — JAR entry loaded and metadata resolved"
-                    : "RESULT: FAIL — class or method resolution failed");
+            output.append(classOk && methodOk && executionOk
+                    ? "RESULT: PASS — JAR loaded, method resolved and multiply(6, 7) returned 42"
+                    : "RESULT: FAIL — class loading, resolution or bytecode execution failed");
         } catch (IOException error) {
             output.append("RESULT: FAIL — ").append(error.getMessage());
         } catch (LinkageError error) {
