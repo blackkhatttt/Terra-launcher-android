@@ -4,29 +4,44 @@ name: Build Universe Launcher 0.2
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
+    name: Build Android APK
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Descargar repositorio
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Extract project
+      # 2. Extraer proyecto
+      - name: Extract Universe Launcher
         run: |
+          if [ ! -f "UniverseLauncher-0.2.zip" ]; then
+            echo "ERROR: No se encontró UniverseLauncher-0.2.zip"
+            ls -la
+            exit 1
+          fi
+
           unzip -o UniverseLauncher-0.2.zip -d extracted
-          echo "Archivos extraídos:"
+
+          echo "Contenido extraído:"
           find extracted -maxdepth 4 -type f | head -100
 
-      - name: Locate project
+      # 3. Localizar proyecto
+      - name: Locate Android project
         id: locate
         run: |
-          APP_BUILD=$(find extracted -type f -path '*/terra-android/build.gradle' -print -quit)
+          APP_BUILD=$(find extracted -type f \
+            -path '*/terra-android/build.gradle' \
+            -print -quit)
 
           if [ -z "$APP_BUILD" ]; then
-            echo "No se encontró terra-android/build.gradle"
+            echo "ERROR: No se encontró terra-android/build.gradle"
+            find extracted -maxdepth 5 -type f
             exit 1
           fi
 
@@ -36,35 +51,60 @@ jobs:
           echo "project_dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
           echo "app_dir=$APP_DIR" >> "$GITHUB_OUTPUT"
 
+          echo "Proyecto: $PROJECT_DIR"
+          echo "Aplicación: $APP_DIR"
+
+      # 4. Java 17
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
+      # 5. Android SDK
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
 
+      # 6. Android NDK y CMake
       - name: Install Android tools
         run: |
-          sdkmanager "platform-tools" \
+          sdkmanager \
+            "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.0" \
             "ndk;27.2.12479018" \
             "cmake;3.22.1"
+
           yes | sdkmanager --licenses
 
+      # 7. Gradle
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # 8. Limpiar caché nativa
+      - name: Clean native build cache
+        run: |
+          find extracted -type d \
+            \( -name ".cxx" -o -name ".externalNativeBuild" \) \
+            -prune -exec rm -rf {} +
+
+          echo "Caché CMake/Ninja limpiada."
+
+      # 9. Compilar
       - name: Build Universe Launcher
         run: |
           cd "${{ steps.locate.outputs.project_dir }}"
-          gradle assembleDebug
+          gradle --no-daemon clean assembleDebug
 
-      - name: Upload APK
+      # 10. Comprobar APK
+      - name: Verify APK
+        run: |
+          find extracted -type f -name "*.apk" -print
+
+      # 11. Publicar APK
+      - name: Upload Universe Launcher APK
         uses: actions/upload-artifact@v4
         with:
-          name: UniverseLauncher-0.2
+          name: UniverseLauncher-0.2-Android
           path: extracted/**/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
