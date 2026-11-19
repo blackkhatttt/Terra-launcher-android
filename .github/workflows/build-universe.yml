@@ -27,45 +27,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Locate and extract SolarCrystal 0.7 project
+      - name: Extract SolarCrystal 0.6 baseline and apply 0.7 patch
         shell: bash
         run: |
           set -euo pipefail
-
-          find_project() {
-            local root="$1"
-            while IFS= read -r settings; do
-              local dir
-              dir="$(dirname "$settings")"
-              if [ -f "$dir/terra-android/build.gradle" ] &&
-                 [ -f "$dir/terra-core/build.gradle" ] &&
-                 [ -f "$dir/terra-android/src/main/cpp/class_registry.cpp" ] &&
-                 grep -q 'VERSION 0.7.0' "$dir/terra-android/src/main/cpp/CMakeLists.txt"; then
-                echo "$dir"
-                return 0
-              fi
-            done < <(find "$root" -maxdepth 7 -type f -name settings.gradle -not -path '*/.git/*' | sort)
-            return 1
-          }
-
-          if ! PROJECT_DIR="$(find_project "$GITHUB_WORKSPACE")"; then
-            ZIP_FILE="$GITHUB_WORKSPACE/UniverseLauncher-0.7-SolarCrystal-0.7.zip"
-            if [ ! -f "$ZIP_FILE" ]; then
-              echo "::error::SolarCrystal 0.7 project or ZIP not found."
-              exit 1
-            fi
-            EXTRACT_DIR="$RUNNER_TEMP/universe-07-source"
-            mkdir -p "$EXTRACT_DIR"
-            unzip -q "$ZIP_FILE" -d "$EXTRACT_DIR"
-            PROJECT_DIR="$(find_project "$EXTRACT_DIR")" || {
-              echo "::error::ZIP does not contain a valid SolarCrystal 0.7 project."
-              exit 1
-            }
-          fi
-
-          PROJECT_DIR="$(realpath "$PROJECT_DIR")"
+          BASE_ZIP="$GITHUB_WORKSPACE/UniverseLauncher-0.6-SolarCrystal-0.6.zip"
+          PATCH_B64="$GITHUB_WORKSPACE/SolarCrystal-0.7.patch.gz.b64"
+          test -f "$BASE_ZIP"
+          test -f "$PATCH_B64"
+          EXTRACT_DIR="$RUNNER_TEMP/universe-07-source"
+          mkdir -p "$EXTRACT_DIR"
+          unzip -q "$BASE_ZIP" -d "$EXTRACT_DIR"
+          base64 --decode "$PATCH_B64" > "$RUNNER_TEMP/solarcrystal-0.7.patch.gz"
+          gzip -dc "$RUNNER_TEMP/solarcrystal-0.7.patch.gz" | patch --batch -p1 -d "$EXTRACT_DIR"
+          PROJECT_DIR="$EXTRACT_DIR/uc02"
+          test -f "$PROJECT_DIR/terra-android/src/main/cpp/class_registry.cpp"
+          test -f "$PROJECT_DIR/terra-android/build.gradle"
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-          echo "Using project: $PROJECT_DIR"
+          echo "Prepared SolarCrystal 0.7 project: $PROJECT_DIR"
 
       - name: Validate SolarCrystal 0.7 sources and preserved tests
         shell: bash
@@ -75,7 +54,7 @@ jobs:
           JAVA="$PROJECT_DIR/terra-android/src/main/java"
           grep -q 'VERSION 0.7.0' "$CPP/CMakeLists.txt"
           grep -q 'class_registry.cpp' "$CPP/CMakeLists.txt"
-          grep -q 'nativeLoadClass' "$CPP/class_registry.cpp"
+          grep -q 'nativeLoadClass' "$JAVA/com/universe/solarcrystal/NativeBridge.java"
           grep -q 'nativeResolveClass' "$JAVA/com/universe/solarcrystal/NativeBridge.java"
           grep -q 'nativeResolveMethod' "$JAVA/com/universe/solarcrystal/NativeBridge.java"
           grep -q "versionCode 7" "$PROJECT_DIR/terra-android/build.gradle"
