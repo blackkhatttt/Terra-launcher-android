@@ -77,10 +77,10 @@ jobs:
           python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_jar_test.py"
           grep -q "JarClassLoadingTest.run(this)" terra-android/src/main/java/com/terra/android/MainActivity.java
           sed -i "s/versionCode 7/versionCode 8/" "$PROJECT_DIR/terra-android/build.gradle"
-          sed -i "s/versionName ['\"]0.7.0['\"]/versionName '0.8.0'/" "$PROJECT_DIR/terra-android/build.gradle"
-          sed -i "s/VERSION 0.7/VERSION 0.8/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
-          sed -i "s/SOLARCRYSTAL 0.7/SOLARCRYSTAL 0.8/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
-          echo "JAR reader and class loader integrated."
+          sed -i "s/versionName ['\"]0.7.0['\"]/versionName '0.8.3'/" "$PROJECT_DIR/terra-android/build.gradle"
+          sed -i "s/VERSION 0.7/VERSION 0.8.3/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          sed -i "s/SOLARCRYSTAL 0.7/SOLARCRYSTAL 0.8.3/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          echo "JAR reader, class inspector and invokestatic runtime integrated."
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
