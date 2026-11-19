@@ -37,6 +37,12 @@ jobs:
           echo "PROJECT_DIR=$PROJECT" >> "$GITHUB_ENV"
           echo "SolarCrystal source: $PROJECT"
 
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
       - name: Integrate SolarCrystal 0.8 JAR and class loaders
         shell: bash
         run: |
@@ -65,12 +71,6 @@ jobs:
           sed -i "s/VERSION 0.7/VERSION 0.8/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
           sed -i "s/SOLARCRYSTAL 0.7/SOLARCRYSTAL 0.8/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
           echo "JAR reader and class loader integrated."
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
