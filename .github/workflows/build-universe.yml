@@ -16,7 +16,25 @@ jobs:
 
       - name: Extract project
         run: |
-          unzip -o UniverseLauncher-0.2-integrated.zip -d extracted
+          unzip -o UniverseLauncher-0.2.zip -d extracted
+          echo "Archivos extraídos:"
+          find extracted -maxdepth 4 -type f | head -100
+
+      - name: Locate project
+        id: locate
+        run: |
+          APP_BUILD=$(find extracted -type f -path '*/terra-android/build.gradle' -print -quit)
+
+          if [ -z "$APP_BUILD" ]; then
+            echo "No se encontró terra-android/build.gradle"
+            exit 1
+          fi
+
+          APP_DIR=$(dirname "$APP_BUILD")
+          PROJECT_DIR=$(dirname "$APP_DIR")
+
+          echo "project_dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
+          echo "app_dir=$APP_DIR" >> "$GITHUB_OUTPUT"
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -40,12 +58,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build Universe Launcher
-        working-directory: extracted/TerraLauncher-Android-v0.1
-        run: gradle assembleDebug
+        run: |
+          cd "${{ steps.locate.outputs.project_dir }}"
+          gradle assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: UniverseLauncher-0.2
-          path: extracted/TerraLauncher-Android-v0.1/terra-android/build/outputs/apk/debug/*.apk
+          path: extracted/**/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
