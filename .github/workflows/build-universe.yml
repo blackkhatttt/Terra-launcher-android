@@ -30,19 +30,20 @@ jobs:
           set -euo pipefail
 
           find_project_06() {
+            local root="$1"
             local f d
 
             while IFS= read -r f; do
               d="$(dirname "$f")"
 
               if [ -f "$d/terra-android/build.gradle" ] \
-                && [ -f "$d/terra-android/src/main/cpp/class_method_executor.cpp" ] \
-                && grep -q 'VERSION 0.6.0' "$d/terra-android/src/main/cpp/CMakeLists.txt"; then
-                echo "$d"
+                && [ -f "$d/terra-android/src/main/cpp/CMakeLists.txt" ] \
+                && [ -f "$d/terra-android/src/main/cpp/class_method_executor.cpp" ]; then
+                printf '%s\n' "$d"
                 return 0
               fi
             done < <(
-              find "$1" -maxdepth 8 \
+              find "$root" -maxdepth 12 \
                 -name settings.gradle \
                 -not -path '*/.git/*' | sort
             )
@@ -51,9 +52,9 @@ jobs:
           }
 
           if PROJECT_DIR="$(find_project_06 .)"; then
-            echo "Found extracted SolarCrystal 0.6 project."
+            echo "Found extracted SolarCrystal project."
           else
-            ZIP_FILE="$(find . -maxdepth 5 -type f \
+            ZIP_FILE="$(find . -maxdepth 6 -type f \
               -name 'UniverseLauncher-0.6-SolarCrystal-0.6.zip' \
               -print -quit)"
 
@@ -63,27 +64,37 @@ jobs:
             fi
 
             echo "Found ZIP: $ZIP_FILE"
+
             mkdir -p "$RUNNER_TEMP/universe-06-source"
 
             unzip -q "$ZIP_FILE" \
               -d "$RUNNER_TEMP/universe-06-source"
 
-            PROJECT_DIR="$(find_project_06 \
-              "$RUNNER_TEMP/universe-06-source")" || {
-              echo "::error::The ZIP does not contain a valid SolarCrystal 0.6 project."
+            if ! PROJECT_DIR="$(find_project_06 \
+              "$RUNNER_TEMP/universe-06-source")"; then
+
+              echo "::error::Could not locate the SolarCrystal project structure."
+
+              echo "Extracted ZIP contents:"
+              find "$RUNNER_TEMP/universe-06-source" \
+                -maxdepth 5 -type f | sort
+
               exit 1
-            }
+            fi
           fi
 
           PROJECT_DIR="$(realpath "$PROJECT_DIR")"
+
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
-          echo "Using project: $PROJECT_DIR"
+          echo "Project directory: $PROJECT_DIR"
+          echo "Project files:"
           ls -la "$PROJECT_DIR"
 
       - name: Normalize source timestamps
         shell: bash
         run: |
+          set -euo pipefail
           find "$PROJECT_DIR" -type f -exec touch {} +
 
       - name: Set up Java 17
@@ -120,12 +131,28 @@ jobs:
 
           CPP="$PROJECT_DIR/terra-android/src/main/cpp"
           JAVA="$PROJECT_DIR/terra-android/src/main/java"
+          GRADLE_FILE="$PROJECT_DIR/terra-android/build.gradle"
 
+          echo "Checking required files..."
+
+          test -f "$PROJECT_DIR/settings.gradle"
+          test -f "$GRADLE_FILE"
+          test -f "$CPP/CMakeLists.txt"
           test -f "$CPP/vm_runtime.cpp"
           test -f "$CPP/class_method_executor.cpp"
           test -f "$CPP/jni_bridge.cpp"
+          test -f "$JAVA/com/universe/solarcrystal/NativeBridge.java"
+          test -f "$JAVA/com/terra/android/MainActivity.java"
 
-          grep -q 'VERSION 0.6.0' "$CPP/CMakeLists.txt"
+          echo "Checking CMake version..."
+          cat "$CPP/CMakeLists.txt"
+
+          if ! grep -Eq 'VERSION[[:space:]]+0\.6\.0' "$CPP/CMakeLists.txt"; then
+            echo "::error::CMakeLists.txt does not declare SolarCrystal version 0.6.0."
+            exit 1
+          fi
+
+          echo "Checking JNI integration..."
 
           grep -q 'nativeExecuteClassMethodWithArgs' \
             "$CPP/jni_bridge.cpp"
@@ -133,20 +160,29 @@ jobs:
           grep -q 'nativeExecuteClassMethodWithArgs' \
             "$JAVA/com/universe/solarcrystal/NativeBridge.java"
 
+          echo "Checking Android tests..."
+
           grep -q 'runParameterTest' \
             "$JAVA/com/terra/android/MainActivity.java"
 
           grep -q 'runMultiplyTest' \
             "$JAVA/com/terra/android/MainActivity.java"
 
-          grep -q "versionName '0.6.0'" \
-            "$PROJECT_DIR/terra-android/build.gradle"
+          echo "Checking Android version..."
+
+          if ! grep -Eq "versionName[[:space:]]+['\"]0\.6\.0['\"]" \
+            "$GRADLE_FILE"; then
+            echo "::error::Android versionName is not 0.6.0."
+            exit 1
+          fi
 
           echo "SolarCrystal 0.6 sources verified."
 
       - name: Build debug APK
         shell: bash
         run: |
+          set -euo pipefail
+
           gradle --no-daemon --stacktrace \
             -p "$PROJECT_DIR" \
             :terra-android:clean \
@@ -162,19 +198,22 @@ jobs:
               -name '*.apk' -print -quit
           )"
 
-          test -n "$APK"
+          if [ -z "$APK" ]; then
+            echo "::error::Debug APK was not generated."
+            exit 1
+          fi
 
-          echo "APK: $APK"
+          echo "APK generated: $APK"
 
           unzip -l "$APK" | grep 'libsolarcrystal.so'
 
           ABI_COUNT="$(
             unzip -l "$APK" |
-              grep -c 'lib/.*/libsolarcrystal.so'
+              grep -c 'lib/.*/libsolarcrystal.so' || true
           )"
 
           if [ "$ABI_COUNT" -ne 4 ]; then
-            echo "::error::Expected 4 native ABI libraries, found $ABI_COUNT"
+            echo "::error::Expected 4 native ABI libraries, found $ABI_COUNT."
             exit 1
           fi
 
