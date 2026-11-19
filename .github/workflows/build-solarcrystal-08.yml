@@ -55,9 +55,11 @@ jobs:
           mkdir -p "$DEST"
           cp solarcrystal-0.8/src/main/java/com/universe/solarcrystal/JarArchiveReader.java "$DEST/"
           cp solarcrystal-0.8/src/main/java/com/universe/solarcrystal/ClassFileLoader.java "$DEST/"
+          cp solarcrystal-0.8/src/main/java/com/universe/solarcrystal/ClassFileInspector.java "$DEST/"
           cp solarcrystal-0.8/src/main/java/com/universe/solarcrystal/JarClassLoadingTest.java "$DEST/"
           grep -q "class JarArchiveReader" "$DEST/JarArchiveReader.java"
           grep -q "class ClassFileLoader" "$DEST/ClassFileLoader.java"
+          grep -q "class ClassFileInspector" "$DEST/ClassFileInspector.java"
           grep -q "class JarClassLoadingTest" "$DEST/JarClassLoadingTest.java"
 
           FIXTURE="$GITHUB_WORKSPACE/solarcrystal-0.8/tests/jar-fixture"
