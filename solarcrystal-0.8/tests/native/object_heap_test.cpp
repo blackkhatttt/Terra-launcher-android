@@ -51,6 +51,14 @@ int main() {
     catch (const std::runtime_error&) { invalid_reference_rejected = true; }
     assert(invalid_reference_rejected);
 
+    for (std::size_t i = 1; i < ObjectHeap::MAX_OBJECTS; ++i)
+        (void)heap.allocate("HeapLimitProbe", {ObjectField{"n", 0}});
+    bool heap_limit_rejected = false;
+    try { (void)heap.allocate("Overflow", {}); }
+    catch (const std::runtime_error&) { heap_limit_rejected = true; }
+    assert(heap_limit_rejected);
+    assert(heap.size() == ObjectHeap::MAX_OBJECTS);
+
     std::cout << "SolarCrystal ObjectHeap: PASS\n";
     std::cout << "Allocation, field read/write, class checks and invalid refs: PASS\n";
     return 0;
