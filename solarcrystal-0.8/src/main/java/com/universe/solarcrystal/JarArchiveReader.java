@@ -6,18 +6,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 /**
- * Minimal in-memory JAR reader for SolarCrystal 0.8.
- *
- * This reads archive entries only. It does not define or execute Java classes.
+ * Bounded in-memory reader for JAR/ZIP entries.
+ * It reads archive data only; class definition and execution are separate.
  */
 public final class JarArchiveReader {
     private static final int MAX_ARCHIVE_BYTES = 128 * 1024 * 1024;
     private static final int MAX_ENTRY_BYTES = 64 * 1024 * 1024;
+    private static final int MAX_CLASS_BYTES = 16 * 1024 * 1024;
+    private static final int MAX_CLASS_TOTAL_BYTES = 64 * 1024 * 1024;
+    private static final int MAX_ENTRIES = 16384;
     private static final int BUFFER_SIZE = 8192;
 
     private JarArchiveReader() {}
@@ -37,12 +41,13 @@ public final class JarArchiveReader {
     public static List<EntryInfo> listEntries(byte[] archive) throws IOException {
         requireArchive(archive);
         List<EntryInfo> result = new ArrayList<>();
-        try (ZipInputStream zip = new ZipInputStream(
-                new ByteArrayInputStream(archive))) {
+        try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(archive))) {
             ZipEntry entry;
             while ((entry = zip.getNextEntry()) != null) {
-                result.add(new EntryInfo(entry.getName(), entry.getSize(),
-                        entry.isDirectory()));
+                if (result.size() >= MAX_ENTRIES) {
+                    throw new IOException("JAR contains too many entries");
+                }
+                result.add(new EntryInfo(entry.getName(), entry.getSize(), entry.isDirectory()));
                 drainEntry(zip, MAX_ENTRY_BYTES);
                 zip.closeEntry();
             }
@@ -50,15 +55,46 @@ public final class JarArchiveReader {
         return Collections.unmodifiableList(result);
     }
 
-    public static byte[] readEntry(byte[] archive, String wantedName)
-            throws IOException {
+    /**
+     * Reads only .class entries in one archive pass.
+     * The returned map is bounded to 64 MiB of uncompressed class data.
+     */
+    public static Map<String, byte[]> readClassEntries(byte[] archive) throws IOException {
+        requireArchive(archive);
+        Map<String, byte[]> classes = new LinkedHashMap<>();
+        int totalBytes = 0;
+        try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(archive))) {
+            ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                if (classes.size() >= MAX_ENTRIES) {
+                    throw new IOException("JAR contains too many class entries");
+                }
+                String name = entry.getName();
+                if (!entry.isDirectory() && name != null && name.endsWith(".class")) {
+                    if (classes.containsKey(name)) {
+                        throw new IOException("Duplicate JAR class entry: " + name);
+                    }
+                    byte[] bytes = readBounded(zip, MAX_CLASS_BYTES);
+                    if (bytes.length > MAX_CLASS_TOTAL_BYTES - totalBytes) {
+                        throw new IOException("Total uncompressed class data exceeds 64 MiB");
+                    }
+                    totalBytes += bytes.length;
+                    classes.put(name, bytes);
+                } else {
+                    drainEntry(zip, MAX_ENTRY_BYTES);
+                }
+                zip.closeEntry();
+            }
+        }
+        return Collections.unmodifiableMap(classes);
+    }
+
+    public static byte[] readEntry(byte[] archive, String wantedName) throws IOException {
         requireArchive(archive);
         if (wantedName == null || wantedName.length() == 0) {
             throw new IllegalArgumentException("Entry name is empty");
         }
-
-        try (ZipInputStream zip = new ZipInputStream(
-                new ByteArrayInputStream(archive))) {
+        try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(archive))) {
             ZipEntry entry;
             while ((entry = zip.getNextEntry()) != null) {
                 if (wantedName.equals(entry.getName())) {
@@ -85,30 +121,28 @@ public final class JarArchiveReader {
         }
     }
 
-    private static void drainEntry(InputStream input, int limit)
-            throws IOException {
+    private static void drainEntry(InputStream input, int limit) throws IOException {
         byte[] buffer = new byte[BUFFER_SIZE];
         int total = 0;
         int read;
         while ((read = input.read(buffer)) != -1) {
-            total += read;
-            if (total > limit) {
+            if (read > limit - total) {
                 throw new IOException("JAR entry exceeds 64 MiB limit");
             }
+            total += read;
         }
     }
 
-    private static byte[] readBounded(InputStream input, int limit)
-            throws IOException {
+    private static byte[] readBounded(InputStream input, int limit) throws IOException {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         byte[] buffer = new byte[BUFFER_SIZE];
         int total = 0;
         int read;
         while ((read = input.read(buffer)) != -1) {
-            total += read;
-            if (total > limit) {
-                throw new IOException("JAR entry exceeds 64 MiB limit");
+            if (read > limit - total) {
+                throw new IOException("JAR entry exceeds configured size limit");
             }
+            total += read;
             output.write(buffer, 0, read);
         }
         return output.toByteArray();
