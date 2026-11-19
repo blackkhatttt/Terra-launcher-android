@@ -14,6 +14,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Extract SolarCrystal
+        run: |
+          unzip -q SolarCrystal-0.1.zip -d .
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
