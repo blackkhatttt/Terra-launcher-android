@@ -7,4 +7,6 @@ public final class SolarCrystalJarFixture {
     public static int bitwiseAnd(int left, int right) { return left & right; }
     public static int shiftLeft(int value, int amount) { return value << amount; }
     public static int absolute(int value) { return value < 0 ? -value : value; }
+    public static int helper(int value) { return value * 3; }
+    public static int callsHelper(int value) { return helper(value) + 1; }
 }
