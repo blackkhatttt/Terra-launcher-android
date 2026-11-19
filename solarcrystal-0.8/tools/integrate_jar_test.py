@@ -30,7 +30,7 @@ button_code = """        testClassLoading.setOnClickListener(v -> runClassLoadin
         jarLoadingParams.topMargin = dp(8);
         page.addView(testJarLoading, jarLoadingParams);
         testJarLoading.setOnClickListener(v -> runJarClassLoadingTest());"""
-if "runJarClassLoadingTest()" not in source:
+if "private void runJarClassLoadingTest()" not in source:
     if button_anchor not in source:
         raise SystemExit("Could not find class-loading button anchor")
     source = source.replace(button_anchor, button_code, 1)
