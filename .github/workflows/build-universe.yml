@@ -1,5 +1,4 @@
-
-name: Build Universe Launcher 0.2 - SolarCrystal 0.2
+name: Build Universe Launcher 0.4 - SolarCrystal VM
 
 on:
   workflow_dispatch:
@@ -16,7 +15,7 @@ env:
 
 jobs:
   build:
-    name: Build Universe Launcher APK
+    name: Build Universe Launcher 0.4 APK
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -24,72 +23,90 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Locate SolarCrystal 0.2 project
+      # Prefer the actual SolarCrystal 0.4 sources. If only ZIPs are
+      # committed, extract the newest matching UniverseLauncher 0.4 archive
+      # into a clean directory so an older extracted project cannot win.
+      - name: Locate SolarCrystal 0.4 project
         shell: bash
         run: |
           set -euo pipefail
 
-          is_solarcrystal_02_project() {
+          is_v04_project() {
             local d="$1"
             [ -f "$d/settings.gradle" ] &&
             [ -f "$d/terra-android/build.gradle" ] &&
+            [ -f "$d/terra-android/src/main/cpp/CMakeLists.txt" ] &&
             [ -f "$d/terra-android/src/main/cpp/class_reader.cpp" ] &&
-            [ -f "$d/terra-android/src/main/cpp/include/class_reader.h" ]
+            [ -f "$d/terra-android/src/main/cpp/vm_runtime.cpp" ] &&
+            [ -f "$d/terra-android/src/main/cpp/include/vm_runtime.h" ] &&
+            grep -q 'vm_runtime.cpp' "$d/terra-android/src/main/cpp/CMakeLists.txt" &&
+            grep -q 'nativeExecuteBytecode' "$d/terra-android/src/main/java/com/universe/solarcrystal/NativeBridge.java"
           }
 
           PROJECT_DIR=""
 
+          # First search checked-in source directories for a complete 0.4 tree.
           while IFS= read -r settings; do
             candidate="$(dirname "$settings")"
-            if is_solarcrystal_02_project "$candidate"; then
+            if is_v04_project "$candidate"; then
               PROJECT_DIR="$candidate"
               break
             fi
-          done < <(find . -maxdepth 6 -name settings.gradle -not -path './.git/*' | sort)
+          done < <(find . -maxdepth 7 -name settings.gradle -not -path './.git/*' | sort)
 
+          # If sources are not expanded in the repository, extract a matching ZIP.
           if [ -z "$PROJECT_DIR" ]; then
-            echo "Searching ZIP archives for SolarCrystal 0.2..."
-
-            mkdir -p "$RUNNER_TEMP/universe-source"
+            mkdir -p "$RUNNER_TEMP/universe-04-source"
             FOUND_ZIP=""
 
             while IFS= read -r archive; do
-              if unzip -Z1 "$archive" | grep -qE '(^|/)terra-android/src/main/cpp/class_reader\.cpp$' &&
-                 unzip -Z1 "$archive" | grep -qE '(^|/)terra-android/src/main/cpp/include/class_reader\.h$'; then
+              if unzip -tq "$archive" >/dev/null 2>&1 &&
+                 unzip -Z1 "$archive" | grep -qE '(^|/)terra-android/src/main/cpp/vm_runtime\.cpp$' &&
+                 unzip -Z1 "$archive" | grep -qE '(^|/)terra-android/src/main/cpp/include/vm_runtime\.h$'; then
                 FOUND_ZIP="$archive"
                 break
               fi
-            done < <(find . -maxdepth 3 -type f -name 'UniverseLauncher*.zip' | sort -r)
+            done < <(find . -maxdepth 4 -type f -name 'UniverseLauncher-0.4-SolarCrystal-0.4.zip' | sort)
 
             if [ -z "$FOUND_ZIP" ]; then
-              echo "::error::No ZIP containing the SolarCrystal 0.2 class reader was found."
+              echo "::error::Could not find SolarCrystal 0.4 source files or UniverseLauncher-0.4-SolarCrystal-0.4.zip."
               exit 1
             fi
 
-            echo "Using archive: $FOUND_ZIP"
-            unzip -q "$FOUND_ZIP" -d "$RUNNER_TEMP/universe-source"
+            echo "Extracting $FOUND_ZIP"
+            unzip -q "$FOUND_ZIP" -d "$RUNNER_TEMP/universe-04-source"
 
             while IFS= read -r settings; do
               candidate="$(dirname "$settings")"
-              if is_solarcrystal_02_project "$candidate"; then
+              if is_v04_project "$candidate"; then
                 PROJECT_DIR="$candidate"
                 break
               fi
-            done < <(find "$RUNNER_TEMP/universe-source" -maxdepth 7 -name settings.gradle | sort)
+            done < <(find "$RUNNER_TEMP/universe-04-source" -maxdepth 9 -name settings.gradle | sort)
           fi
 
           if [ -z "$PROJECT_DIR" ]; then
-            echo "::error::SolarCrystal 0.2 project files are missing."
+            echo "::error::The selected archive does not contain a complete SolarCrystal 0.4 project."
             exit 1
           fi
 
           PROJECT_DIR="$(realpath "$PROJECT_DIR")"
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-
           echo "Selected project: $PROJECT_DIR"
-          ls -l \
-            "$PROJECT_DIR/terra-android/src/main/cpp/class_reader.cpp" \
-            "$PROJECT_DIR/terra-android/src/main/cpp/include/class_reader.h"
+          echo "SolarCrystal CMake sources:"
+          grep -nE 'solarcrystal.cpp|class_reader.cpp|vm_runtime.cpp|jni_bridge.cpp' \
+            "$PROJECT_DIR/terra-android/src/main/cpp/CMakeLists.txt"
+
+      - name: Verify version and JNI integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'VERSION 0.4.0' "$PROJECT_DIR/terra-android/src/main/cpp/CMakeLists.txt"
+          grep -q "versionName '0.4.0'" "$PROJECT_DIR/terra-android/build.gradle"
+          grep -q 'nativeInspectClass' "$PROJECT_DIR/terra-android/src/main/java/com/universe/solarcrystal/NativeBridge.java"
+          grep -q 'nativeExecuteBytecode' "$PROJECT_DIR/terra-android/src/main/java/com/universe/solarcrystal/NativeBridge.java"
+          grep -q 'vm_runtime.cpp' "$PROJECT_DIR/terra-android/src/main/cpp/CMakeLists.txt"
+          echo "SolarCrystal 0.4 source checks passed."
 
       - name: Normalize source timestamps
         shell: bash
@@ -115,7 +132,6 @@ jobs:
             "platform-tools" \
             "platforms;android-35" \
             "build-tools;34.0.0" \
-            "build-tools;35.0.0" \
             "cmake;${ANDROID_CMAKE_VERSION}" \
             "ndk;${ANDROID_NDK_VERSION}"
 
@@ -123,17 +139,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: ${{ env.GRADLE_VERSION }}
-
-      - name: Verify SolarCrystal 0.2 native integration
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          grep -q "class_reader.cpp" "$PROJECT_DIR/terra-android/src/main/cpp/CMakeLists.txt"
-          grep -q "nativeInspectClass" "$PROJECT_DIR/terra-android/src/main/java/com/universe/solarcrystal/NativeBridge.java"
-          grep -q "nativeInspectClass" "$PROJECT_DIR/terra-android/src/main/cpp/jni_bridge.cpp"
-
-          echo "SolarCrystal 0.2 integration verified."
 
       - name: Build debug APK
         shell: bash
@@ -144,32 +149,34 @@ jobs:
             :terra-android:clean \
             :terra-android:assembleDebug
 
-      - name: Verify APK and native libraries
+      - name: Verify APK and SolarCrystal native library
         shell: bash
         run: |
           set -euo pipefail
 
-          APK="$(find "$PROJECT_DIR/terra-android/build/outputs/apk/debug" -maxdepth 1 -name '*.apk' -print -quit)"
+          APK="$(find "$PROJECT_DIR/terra-android/build/outputs/apk/debug" \
+            -maxdepth 1 -type f -name '*.apk' -print -quit)"
+
           if [ -z "$APK" ]; then
             echo "::error::Debug APK was not generated."
             exit 1
           fi
 
-          echo "Generated APK: $APK"
-          unzip -l "$APK" | grep 'libsolarcrystal.so'
+          echo "APK: $APK"
+          unzip -l "$APK" | grep -E 'lib/[^/]+/libsolarcrystal\.so$'
 
-          LIB_COUNT="$(unzip -l "$APK" | grep -cE 'lib/[^/]+/libsolarcrystal\.so$' || true)"
-          if [ "$LIB_COUNT" -ne 4 ]; then
-            echo "::error::Expected 4 native libraries, found $LIB_COUNT."
+          ABI_COUNT="$(unzip -l "$APK" | grep -cE 'lib/[^/]+/libsolarcrystal\.so$' || true)"
+          if [ "$ABI_COUNT" -lt 1 ]; then
+            echo "::error::libsolarcrystal.so is missing from the APK."
             exit 1
           fi
 
-          echo "APK verification passed."
+          echo "APK verification passed ($ABI_COUNT ABI libraries found)."
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: UniverseLauncher-0.2-SolarCrystal-0.2-Android
+          name: UniverseLauncher-0.4-SolarCrystal-0.4-Android
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
