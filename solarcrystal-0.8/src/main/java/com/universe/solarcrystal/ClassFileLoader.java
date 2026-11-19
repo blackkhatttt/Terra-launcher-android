@@ -2,6 +2,7 @@ package com.universe.solarcrystal;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -26,8 +27,8 @@ public final class ClassFileLoader {
                            List<String> loadedClasses, List<String> errors) {
             this.loaded = loaded;
             this.skipped = skipped;
-            this.loadedClasses = List.copyOf(loadedClasses);
-            this.errors = List.copyOf(errors);
+            this.loadedClasses = Collections.unmodifiableList(new ArrayList<>(loadedClasses));
+            this.errors = Collections.unmodifiableList(new ArrayList<>(errors));
         }
 
         public boolean isSuccessful() {
