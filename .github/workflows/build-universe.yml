@@ -1,3 +1,4 @@
+
 name: Build Universe Launcher 0.6 - SolarCrystal
 
 on:
@@ -23,7 +24,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Locate SolarCrystal 0.6 project
+      - name: Locate or extract SolarCrystal 0.6
         shell: bash
         run: |
           set -euo pipefail
@@ -41,27 +42,43 @@ jobs:
                 return 0
               fi
             done < <(
-              find "$1" -maxdepth 7 \
+              find "$1" -maxdepth 8 \
                 -name settings.gradle \
-                -not -path '*/.git/*' \
-                | sort
+                -not -path '*/.git/*' | sort
             )
 
             return 1
           }
 
-          if ! PROJECT_DIR="$(find_project_06 .)"; then
-            echo "::error::SolarCrystal 0.6 project not found."
-            echo "Upload the complete 0.6 source project to the repository."
-            exit 1
+          if PROJECT_DIR="$(find_project_06 .)"; then
+            echo "Found extracted SolarCrystal 0.6 project."
+          else
+            ZIP_FILE="$(find . -maxdepth 5 -type f \
+              -name 'UniverseLauncher-0.6-SolarCrystal-0.6.zip' \
+              -print -quit)"
+
+            if [ -z "$ZIP_FILE" ]; then
+              echo "::error::SolarCrystal 0.6 ZIP was not found."
+              exit 1
+            fi
+
+            echo "Found ZIP: $ZIP_FILE"
+            mkdir -p "$RUNNER_TEMP/universe-06-source"
+
+            unzip -q "$ZIP_FILE" \
+              -d "$RUNNER_TEMP/universe-06-source"
+
+            PROJECT_DIR="$(find_project_06 \
+              "$RUNNER_TEMP/universe-06-source")" || {
+              echo "::error::The ZIP does not contain a valid SolarCrystal 0.6 project."
+              exit 1
+            }
           fi
 
           PROJECT_DIR="$(realpath "$PROJECT_DIR")"
-
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
           echo "Using project: $PROJECT_DIR"
-
           ls -la "$PROJECT_DIR"
 
       - name: Normalize source timestamps
@@ -142,8 +159,7 @@ jobs:
 
           APK="$(
             find "$PROJECT_DIR/terra-android/build/outputs/apk/debug" \
-              -name '*.apk' \
-              -print -quit
+              -name '*.apk' -print -quit
           )"
 
           test -n "$APK"
@@ -153,8 +169,8 @@ jobs:
           unzip -l "$APK" | grep 'libsolarcrystal.so'
 
           ABI_COUNT="$(
-            unzip -l "$APK" \
-              | grep -c 'lib/.*/libsolarcrystal.so'
+            unzip -l "$APK" |
+              grep -c 'lib/.*/libsolarcrystal.so'
           )"
 
           if [ "$ABI_COUNT" -ne 4 ]; then
