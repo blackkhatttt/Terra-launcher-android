@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.8 - SolarCrystal JAR Class Loader
+name: Build Universe Launcher 0.8.3 - SolarCrystal invokestatic
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.8
+    name: Build and verify SolarCrystal 0.8.3
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -40,6 +40,10 @@ jobs:
           python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_082.py"
           grep -q "case 0x70:" terra-android/src/main/cpp/vm_runtime.cpp
           echo "SolarCrystal 0.8.2 integer opcodes integrated."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_083.py"
+          grep -q "case 0xb8:" terra-android/src/main/cpp/vm_runtime.cpp
+          grep -q "invokestatic_executor.cpp" terra-android/src/main/cpp/CMakeLists.txt
+          echo "SolarCrystal 0.8.3b invokestatic runtime integrated."
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -103,6 +107,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.8
+          name: Universe-Launcher-SolarCrystal-0.8.3
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
