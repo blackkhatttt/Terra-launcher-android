@@ -47,6 +47,9 @@ jobs:
           python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_084.py"
           grep -q "object_heap.cpp" terra-android/src/main/cpp/CMakeLists.txt
           echo "SolarCrystal 0.8.4 object heap integrated."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_084b.py"
+          grep -q "vm_value.cpp" terra-android/src/main/cpp/CMakeLists.txt
+          echo "SolarCrystal 0.8.4b tagged VM values integrated."
 
       - name: Test SolarCrystal object heap
         shell: bash
@@ -59,6 +62,19 @@ jobs:
             -I solarcrystal-0.8/native \
             -o "$RUNNER_TEMP/sc084/object_heap_test"
           "$RUNNER_TEMP/sc084/object_heap_test"
+
+      - name: Test SolarCrystal typed VM values
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/sc084b"
+          g++ -std=c++17 -Wall -Wextra -Werror \
+            solarcrystal-0.8/native/object_heap.cpp \
+            solarcrystal-0.8/native/vm_value.cpp \
+            solarcrystal-0.8/tests/native/vm_value_test.cpp \
+            -I solarcrystal-0.8/native \
+            -o "$RUNNER_TEMP/sc084b/vm_value_test"
+          "$RUNNER_TEMP/sc084b/vm_value_test"
 
       - name: Set up JDK
         uses: actions/setup-java@v4
