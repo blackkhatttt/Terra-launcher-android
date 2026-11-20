@@ -82,6 +82,24 @@ InstanceFieldResolver ClassFileExecutionResolver::instance_field_resolver() cons
   const auto* declaration = find_inherited_field(ref.owner, ref.name, ref.descriptor);
   if (!declaration)
    throw std::runtime_error("Field reference does not match a declared field in its superclass chain");
+  std::string declaring_class = ref.owner;
+  std::string current = ref.owner;
+  std::set<std::string> visited;
+  while (!current.empty() && visited.insert(current).second) {
+   const auto* type = find_class(current);
+   if (!type) break;
+   bool found = false;
+   for (const auto& candidate_field : type->fields()) {
+    if (candidate_field.name == ref.name && candidate_field.descriptor == ref.descriptor) {
+     declaring_class = current;
+     found = true;
+     break;
+    }
+   }
+   if (found) break;
+   current = type->super_name();
+   if (current == "java/lang/Object") break;
+  }
   std::vector<std::string> compatible;
   if (repository_) {
    for (const auto* candidate : repository_->all())
@@ -90,8 +108,8 @@ InstanceFieldResolver ClassFileExecutionResolver::instance_field_resolver() cons
   } else {
    compatible.push_back(model_.name());
   }
-  return InstanceField{declaration->name, declaration->descriptor, ref.owner,
-      declaration->name, compatible};
+  return InstanceField{ref.owner, declaration->name, declaration->descriptor,
+      declaring_class, declaration->name, compatible};
  };
 }
 } // namespace solarcrystal
