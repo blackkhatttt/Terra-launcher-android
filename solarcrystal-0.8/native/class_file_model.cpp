@@ -20,10 +20,16 @@ private:
  void require(std::size_t n)const{if(n>size_-position_)throw std::runtime_error("Unexpected end of class file");}
 };
 std::string cp_utf8(const std::vector<ConstantPoolEntry>& cp,std::uint16_t i){
- if(!i||i>=cp.size()||cp[i].tag!=1)throw std::runtime_error("Invalid CONSTANT_Utf8 reference");return cp[i].text;
+ if (!i || i >= cp.size() || cp[i].tag != 1) {
+  throw std::runtime_error("Invalid CONSTANT_Utf8 reference");
+ }
+ return cp[i].text;
 }
 std::string cp_class(const std::vector<ConstantPoolEntry>& cp,std::uint16_t i){
- if(!i||i>=cp.size()||cp[i].tag!=7)throw std::runtime_error("Invalid CONSTANT_Class reference");return cp_utf8(cp,cp[i].first);
+ if (!i || i >= cp.size() || cp[i].tag != 7) {
+  throw std::runtime_error("Invalid CONSTANT_Class reference");
+ }
+ return cp_utf8(cp, cp[i].first);
 }
 void skip_attributes(Reader& r,const std::vector<ConstantPoolEntry>& cp,std::uint16_t n){
  for(std::uint16_t i=0;i<n;++i){(void)cp_utf8(cp,r.u2());r.skip(r.u4());}
@@ -60,7 +66,10 @@ ClassFileModel ClassFileModel::parse(const std::uint8_t* data,std::size_t size){
  auto fields=r.u2();for(std::uint16_t i=0;i<fields;++i){ClassFieldInfo f;f.access_flags=r.u2();f.name=cp_utf8(m.constant_pool_,r.u2());f.descriptor=cp_utf8(m.constant_pool_,r.u2());skip_attributes(r,m.constant_pool_,r.u2());m.fields_.push_back(std::move(f));}
  auto methods=r.u2();for(std::uint16_t i=0;i<methods;++i)m.methods_.push_back(parse_method(r,m.constant_pool_));
  skip_attributes(r,m.constant_pool_,r.u2());if(r.remaining())throw std::runtime_error("Unexpected trailing class-file bytes");
- if(m.name_.empty()||m.name_[0]=='['||m.name_.find('.')!=std::string::npos)throw std::runtime_error("Invalid internal class name");return m;
+ if (m.name_.empty() || m.name_[0] == '[' || m.name_.find('.') != std::string::npos) {
+  throw std::runtime_error("Invalid internal class name");
+ }
+ return m;
 }
 const std::string& ClassFileModel::name()const{return name_;}
 const std::string& ClassFileModel::super_name()const{return super_name_;}
@@ -79,6 +88,9 @@ ResolvedMemberReference ClassFileModel::member_reference_at(std::uint16_t i)cons
  return {ref.tag,class_name_at(ref.first),cp_utf8(constant_pool_,nt.first),cp_utf8(constant_pool_,nt.second)};
 }
 const ClassMethodInfo* ClassFileModel::find_method(const std::string& n,const std::string& d)const{
- for(const auto& m:methods_)if(m.name==n&&m.descriptor==d)return &m;return nullptr;
+ for (const auto& method : methods_) {
+  if (method.name == n && method.descriptor == d) return &method;
+ }
+ return nullptr;
 }
 } // namespace solarcrystal
