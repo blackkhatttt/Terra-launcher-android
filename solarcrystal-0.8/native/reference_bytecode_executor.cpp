@@ -1,210 +1,80 @@
 #include "reference_bytecode_executor.h"
-
+#include <cstdint>
+#include <limits>
 #include <stdexcept>
 #include <string>
-#include <utility>
-
-namespace solarcrystal {
-namespace {
-
-struct ExecutionContext {
-    ObjectHeap& heap;
-    const NewClassResolver& resolve_new_class;
-    const SpecialMethodResolver& resolve_special_method;
-    const InstanceFieldResolver& resolve_instance_field;
-    std::size_t budget;
-    ReferenceExecutionResult result;
-    std::size_t constructor_depth = 0;
+namespace solarcrystal { namespace {
+struct Context {
+ ObjectHeap& heap; const NewClassResolver& new_class;
+ const SpecialMethodResolver& special; const InstanceFieldResolver& field;
+ std::size_t budget; ReferenceExecutionResult result; std::size_t constructor_depth=0;
 };
-
-std::uint8_t read_u1(const std::vector<std::uint8_t>& code, std::size_t& pc) {
-    if (pc >= code.size())
-        throw std::runtime_error("Truncated bytecode operand");
-    return code[pc++];
+std::uint8_t u1(const std::vector<std::uint8_t>& c,std::size_t& p){if(p>=c.size())throw std::runtime_error("Truncated bytecode operand");return c[p++];}
+std::uint16_t u2(const std::vector<std::uint8_t>& c,std::size_t& p){auto h=u1(c,p);return static_cast<std::uint16_t>((h<<8)|u1(c,p));}
+std::int32_t add(std::int32_t a,std::int32_t b){return static_cast<std::int32_t>(std::uint32_t(a)+std::uint32_t(b));}
+std::int32_t sub(std::int32_t a,std::int32_t b){return static_cast<std::int32_t>(std::uint32_t(a)-std::uint32_t(b));}
+std::int32_t mul(std::int32_t a,std::int32_t b){return static_cast<std::int32_t>(std::uint32_t(a)*std::uint32_t(b));}
+std::int32_t pop_i(VmFrame& f){return f.pop().as_integer();}
+VmValue load_ref(const VmFrame& f,std::size_t i,const ObjectHeap& h){
+ const auto& v=f.get_local(i); if(!v.is_reference()&&!v.is_null())throw std::runtime_error("aload requires reference or null");
+ if(v.is_reference()&&!h.is_valid(v.as_reference()))throw std::runtime_error("aload invalid reference"); return v;
 }
-
-std::uint16_t read_u2(const std::vector<std::uint8_t>& code, std::size_t& pc) {
-    const auto high = read_u1(code, pc);
-    const auto low = read_u1(code, pc);
-    return static_cast<std::uint16_t>((high << 8) | low);
+void store_ref(VmFrame& f,std::size_t i,const VmValue& v,const ObjectHeap& h){
+ if(!v.is_reference()&&!v.is_null())throw std::runtime_error("astore requires reference or null");
+ if(v.is_reference()&&!h.is_valid(v.as_reference()))throw std::runtime_error("astore invalid reference"); f.set_local(i,v);
 }
-
-VmValue load_reference(const VmFrame& frame, std::size_t index, const ObjectHeap& heap) {
-    const VmValue& value = frame.get_local(index);
-    if (!value.is_reference() && !value.is_null())
-        throw std::runtime_error("aload requires a reference or null local");
-    if (value.is_reference() && !heap.is_valid(value.as_reference()))
-        throw std::runtime_error("aload encountered an invalid object reference");
-    return value;
+ObjectId pop_ref(VmFrame& f,const ObjectHeap& h){
+ auto v=f.pop(); if(!v.is_reference()||!h.is_valid(v.as_reference()))throw std::runtime_error("Instance operation requires valid non-null reference"); return v.as_reference();
 }
-
-void store_reference(VmFrame& frame, std::size_t index,
-                     const VmValue& value, const ObjectHeap& heap) {
-    if (!value.is_reference() && !value.is_null())
-        throw std::runtime_error("astore requires a reference or null value");
-    if (value.is_reference() && !heap.is_valid(value.as_reference()))
-        throw std::runtime_error("astore encountered an invalid object reference");
-    frame.set_local(index, value);
+void run_code(const std::vector<std::uint8_t>&,VmFrame&,Context&,bool);
+void invoke_init(std::uint16_t cp,VmFrame& caller,Context& x){
+ if(!x.special)throw std::runtime_error("invokespecial has no method resolver");
+ auto m=x.special(cp); if(m.name!="<init>"||m.descriptor!="()V")throw std::runtime_error("Only no-argument void constructors supported");
+ auto id=pop_ref(caller,x.heap); auto actual=x.heap.class_name(id);
+ if(m.owner_class=="java/lang/Object"){++x.result.constructors_invoked;return;}
+ if(m.owner_class!=actual)throw std::runtime_error("Superclass constructor dispatch unsupported");
+ if(x.constructor_depth>=16)throw std::runtime_error("Constructor depth limit exceeded");
+ VmFrame f(m.max_locals,m.max_stack); f.set_local(0,VmValue::reference(id));
+ ++x.constructor_depth; ++x.result.constructors_invoked;
+ try{run_code(m.code,f,x,true);}catch(...){--x.constructor_depth;throw;}
+ --x.constructor_depth;
 }
-
-ObjectId pop_object_reference(VmFrame& frame, const ObjectHeap& heap) {
-    const VmValue value = frame.pop();
-    if (!value.is_reference())
-        throw std::runtime_error("Instance operation requires a non-null object reference");
-    const ObjectId id = value.as_reference();
-    if (!heap.is_valid(id))
-        throw std::runtime_error("Instance operation encountered an invalid object reference");
-    return id;
+void run_code(const std::vector<std::uint8_t>& c,VmFrame& f,Context& x,bool ctor){
+ std::size_t p=0;
+ while(p<c.size()){
+  if(++x.result.instructions_executed>x.budget)throw std::runtime_error("Reference bytecode instruction budget exceeded");
+  auto op=u1(c,p);
+  switch(op){
+   case 0x02:case 0x03:case 0x04:case 0x05:case 0x06:case 0x07:case 0x08:f.push(VmValue::integer(std::int32_t(op)-3));break;
+   case 0x10:f.push(VmValue::integer(static_cast<std::int8_t>(u1(c,p))));break;
+   case 0x15:f.push(VmValue::integer(f.get_local(u1(c,p)).as_integer()));break;
+   case 0x1a:case 0x1b:case 0x1c:case 0x1d:f.push(VmValue::integer(f.get_local(op-0x1a).as_integer()));break;
+   case 0x36:{auto i=u1(c,p);f.set_local(i,VmValue::integer(pop_i(f)));break;}
+   case 0x3b:case 0x3c:case 0x3d:case 0x3e:f.set_local(op-0x3b,VmValue::integer(pop_i(f)));break;
+   case 0x60:{auto b=pop_i(f),a=pop_i(f);f.push(VmValue::integer(add(a,b)));break;}
+   case 0x64:{auto b=pop_i(f),a=pop_i(f);f.push(VmValue::integer(sub(a,b)));break;}
+   case 0x68:{auto b=pop_i(f),a=pop_i(f);f.push(VmValue::integer(mul(a,b)));break;}
+   case 0x6c:{auto b=pop_i(f),a=pop_i(f);if(!b)throw std::runtime_error("ArithmeticException: division by zero");f.push(VmValue::integer(a==std::numeric_limits<std::int32_t>::min()&&b==-1?a:a/b));break;}
+   case 0x74:f.push(VmValue::integer(sub(0,pop_i(f))));break;
+   case 0x19:f.push(load_ref(f,u1(c,p),x.heap));break;
+   case 0x2a:case 0x2b:case 0x2c:case 0x2d:f.push(load_ref(f,op-0x2a,x.heap));break;
+   case 0x3a:{auto i=u1(c,p);auto v=f.pop();store_ref(f,i,v,x.heap);break;}
+   case 0x4b:case 0x4c:case 0x4d:case 0x4e:{auto v=f.pop();store_ref(f,op-0x4b,v,x.heap);break;}
+   case 0x59:f.duplicate_top();break; case 0x57:(void)f.pop();break;
+   case 0xbb:{auto cp=u2(c,p);if(!x.new_class)throw std::runtime_error("new has no class resolver");auto name=x.new_class(cp);if(name.empty())throw std::runtime_error("new resolved empty class");auto id=x.heap.allocate(name,{});f.push(VmValue::reference(id));++x.result.objects_allocated;break;}
+   case 0xb7:invoke_init(u2(c,p),f,x);break;
+   case 0xb5:{auto cp=u2(c,p);if(!x.field)throw std::runtime_error("putfield has no field resolver");auto fld=x.field(cp);auto v=f.pop();if(!v.is_integer())throw std::runtime_error("Only integer putfield supported");auto id=pop_ref(f,x.heap);if(fld.owner_class!=x.heap.class_name(id))throw std::runtime_error("putfield owner mismatch");if(!x.heap.has_int_field(id,fld.name))x.heap.define_int_field(id,fld.name,0);x.heap.put_int(id,fld.owner_class,fld.name,v.as_integer());++x.result.fields_written;break;}
+   case 0xb4:{auto cp=u2(c,p);if(!x.field)throw std::runtime_error("getfield has no field resolver");auto fld=x.field(cp);auto id=pop_ref(f,x.heap);if(fld.owner_class!=x.heap.class_name(id))throw std::runtime_error("getfield owner mismatch");f.push(VmValue::integer(x.heap.get_int(id,fld.owner_class,fld.name)));++x.result.fields_read;break;}
+   case 0xac:if(ctor)throw std::runtime_error("Constructor cannot use ireturn");x.result.return_value=VmValue::integer(pop_i(f));x.result.has_return_value=true;x.result.returned=true;return;
+   case 0xb1:x.result.returned=true;return;
+   default:throw std::runtime_error("Unsupported reference bytecode opcode: "+std::to_string(op));
+  }
+ }
 }
-
-void execute_code(const std::vector<std::uint8_t>& code,
-                  VmFrame& frame,
-                  ExecutionContext& context,
-                  bool constructor_body);
-
-void invoke_constructor(std::uint16_t cp_index, VmFrame& caller,
-                        ExecutionContext& context) {
-    if (!context.resolve_special_method)
-        throw std::runtime_error("invokespecial has no method resolver");
-    const SpecialMethod method = context.resolve_special_method(cp_index);
-    if (method.name != "<init>" || method.descriptor != "()V")
-        throw std::runtime_error("Only no-argument void constructors are supported");
-
-    const ObjectId receiver = pop_object_reference(caller, context.heap);
-    const std::string actual_class = context.heap.class_name(receiver);
-    if (method.owner_class == "java/lang/Object") {
-        ++context.result.constructors_invoked;
-        return;
-    }
-    if (method.owner_class != actual_class)
-        throw std::runtime_error("Superclass constructor dispatch is not supported yet");
-    if (context.constructor_depth >= 16)
-        throw std::runtime_error("Constructor call depth limit exceeded");
-
-    VmFrame constructor_frame(method.max_locals, method.max_stack);
-    constructor_frame.set_local(0, VmValue::reference(receiver));
-    ++context.constructor_depth;
-    ++context.result.constructors_invoked;
-    try {
-        execute_code(method.code, constructor_frame, context, true);
-    } catch (...) {
-        --context.constructor_depth;
-        throw;
-    }
-    --context.constructor_depth;
-}
-
-void execute_code(const std::vector<std::uint8_t>& code,
-                  VmFrame& frame,
-                  ExecutionContext& context,
-                  bool constructor_body) {
-    std::size_t pc = 0;
-    bool returned = false;
-    while (pc < code.size()) {
-        if (++context.result.instructions_executed > context.budget)
-            throw std::runtime_error("Reference bytecode instruction budget exceeded");
-
-        const std::uint8_t opcode = read_u1(code, pc);
-        switch (opcode) {
-            case 0x19: frame.push(load_reference(frame, read_u1(code, pc), context.heap)); break;
-            case 0x2a: case 0x2b: case 0x2c: case 0x2d:
-                frame.push(load_reference(frame, opcode - 0x2a, context.heap)); break;
-            case 0x3a: {
-                const auto index = read_u1(code, pc);
-                const auto value = frame.pop();
-                store_reference(frame, index, value, context.heap);
-                break;
-            }
-            case 0x4b: case 0x4c: case 0x4d: case 0x4e: {
-                const auto value = frame.pop();
-                store_reference(frame, opcode - 0x4b, value, context.heap);
-                break;
-            }
-            case 0x59: frame.duplicate_top(); break;
-            case 0x57: (void)frame.pop(); break;
-            case 0xbb: {
-                const auto cp_index = read_u2(code, pc);
-                if (!context.resolve_new_class)
-                    throw std::runtime_error("new has no class constant resolver");
-                const std::string class_name = context.resolve_new_class(cp_index);
-                if (class_name.empty())
-                    throw std::runtime_error("new resolved an empty class name");
-                const ObjectId id = context.heap.allocate(class_name, {});
-                frame.push(VmValue::reference(id));
-                ++context.result.objects_allocated;
-                break;
-            }
-            case 0xb7: invoke_constructor(read_u2(code, pc), frame, context); break;
-            case 0xb5: {
-                const auto cp_index = read_u2(code, pc);
-                if (!context.resolve_instance_field)
-                    throw std::runtime_error("putfield has no field resolver");
-                const InstanceField field = context.resolve_instance_field(cp_index);
-                const VmValue value = frame.pop();
-                if (!value.is_integer())
-                    throw std::runtime_error("Only integer putfield values are supported");
-                const ObjectId receiver = pop_object_reference(frame, context.heap);
-                if (field.owner_class != context.heap.class_name(receiver))
-                    throw std::runtime_error("putfield owner does not match object class");
-                if (!context.heap.has_int_field(receiver, field.name))
-                    context.heap.define_int_field(receiver, field.name, 0);
-                context.heap.put_int(receiver, field.owner_class, field.name, value.as_integer());
-                ++context.result.fields_written;
-                break;
-            }
-            case 0xb4: {
-                const auto cp_index = read_u2(code, pc);
-                if (!context.resolve_instance_field)
-                    throw std::runtime_error("getfield has no field resolver");
-                const InstanceField field = context.resolve_instance_field(cp_index);
-                const ObjectId receiver = pop_object_reference(frame, context.heap);
-                if (field.owner_class != context.heap.class_name(receiver))
-                    throw std::runtime_error("getfield owner does not match object class");
-                frame.push(VmValue::integer(
-                    context.heap.get_int(receiver, field.owner_class, field.name)));
-                ++context.result.fields_read;
-                break;
-            }
-            case 0x10: frame.push(VmValue::integer(static_cast<std::int8_t>(read_u1(code, pc)))); break;
-            case 0x02: case 0x03: case 0x04: case 0x05: case 0x06: case 0x07: case 0x08:
-                frame.push(VmValue::integer(static_cast<std::int32_t>(opcode) - 0x03)); break;
-            case 0x60: {
-                const auto right = frame.pop();
-                const auto left = frame.pop();
-                frame.push(VmValue::integer(left.as_integer() + right.as_integer()));
-                break;
-            }
-            case 0xb1:
-                if (!constructor_body)
-                    throw std::runtime_error("return outside constructor execution");
-                returned = true;
-                if (pc != code.size())
-                    throw std::runtime_error("Instructions after constructor return are unsupported");
-                break;
-            default:
-                throw std::runtime_error("Unsupported reference bytecode opcode: " +
-                                         std::to_string(opcode));
-        }
-        if (returned) break;
-    }
-}
-
 } // namespace
-
-ReferenceExecutionResult execute_reference_bytecode(
-    const std::vector<std::uint8_t>& code,
-    VmFrame& frame,
-    ObjectHeap& heap,
-    const NewClassResolver& resolve_new_class,
-    const SpecialMethodResolver& resolve_special_method,
-    const InstanceFieldResolver& resolve_instance_field,
-    std::size_t instruction_budget) {
-    if (instruction_budget == 0)
-        throw std::runtime_error("Reference bytecode instruction budget is zero");
-    ExecutionContext context{heap, resolve_new_class, resolve_special_method,
-                             resolve_instance_field, instruction_budget, {}, 0};
-    execute_code(code, frame, context, false);
-    return context.result;
+ReferenceExecutionResult execute_reference_bytecode(const std::vector<std::uint8_t>& code,VmFrame& frame,ObjectHeap& heap,
+ const NewClassResolver& new_class,const SpecialMethodResolver& special,const InstanceFieldResolver& field,std::size_t budget){
+ if(!budget)throw std::runtime_error("Reference bytecode instruction budget is zero");
+ Context x{heap,new_class,special,field,budget,{},0};run_code(code,frame,x,false);return x.result;
 }
-
-} // namespace solarcrystal
+}
