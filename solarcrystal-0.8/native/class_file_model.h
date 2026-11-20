@@ -6,7 +6,18 @@
 namespace solarcrystal {
 struct ConstantPoolEntry { std::uint8_t tag=0; std::uint16_t first=0, second=0; std::string text; };
 struct ClassFieldInfo { std::uint16_t access_flags=0; std::string name, descriptor; };
-struct ClassMethodInfo { std::uint16_t access_flags=0; std::string name, descriptor; bool has_code=false; std::uint16_t max_stack=0, max_locals=0; std::vector<std::uint8_t> code; };
+struct CodeExceptionHandler {
+ std::uint16_t start_pc=0, end_pc=0, handler_pc=0, catch_type=0;
+ std::string catch_class;
+};
+struct ClassMethodInfo {
+ std::uint16_t access_flags=0;
+ std::string name, descriptor;
+ bool has_code=false;
+ std::uint16_t max_stack=0, max_locals=0;
+ std::vector<std::uint8_t> code;
+ std::vector<CodeExceptionHandler> exception_handlers;
+};
 struct ResolvedMemberReference { std::uint8_t tag=0; std::string owner, name, descriptor; };
 class ClassFileModel {
 public:
