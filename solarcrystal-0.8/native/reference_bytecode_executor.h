@@ -12,18 +12,40 @@ namespace solarcrystal {
 
 using NewClassResolver = std::function<std::string(std::uint16_t)>;
 
+struct SpecialMethod {
+    std::string owner_class;
+    std::string name;
+    std::string descriptor;
+    std::vector<std::uint8_t> code;
+    std::size_t max_locals = 1;
+    std::size_t max_stack = 1;
+};
+
+struct InstanceField {
+    std::string owner_class;
+    std::string name;
+};
+
+using SpecialMethodResolver = std::function<SpecialMethod(std::uint16_t)>;
+using InstanceFieldResolver = std::function<InstanceField(std::uint16_t)>;
+
 struct ReferenceExecutionResult {
     std::size_t instructions_executed = 0;
     std::size_t objects_allocated = 0;
+    std::size_t constructors_invoked = 0;
+    std::size_t fields_written = 0;
+    std::size_t fields_read = 0;
 };
 
-// Executes the first bounded reference-opcode subset against an existing frame.
-// Supported: aload, aload_0..3, astore, astore_0..3, dup, pop, new.
+// Bounded object/constructor subset. Constructors are restricted to ()V,
+// same-class calls and the java/lang/Object no-op constructor.
 ReferenceExecutionResult execute_reference_bytecode(
     const std::vector<std::uint8_t>& code,
     VmFrame& frame,
     ObjectHeap& heap,
     const NewClassResolver& resolve_new_class,
+    const SpecialMethodResolver& resolve_special_method = {},
+    const InstanceFieldResolver& resolve_instance_field = {},
     std::size_t instruction_budget = 100000);
 
 } // namespace solarcrystal
