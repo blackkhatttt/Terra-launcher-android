@@ -193,11 +193,11 @@ jobs:
           gradle_path = Path(sys.argv[1])
           gradle_text = gradle_path.read_text(encoding="utf-8")
           gradle_text, code_count = re.subn(
-              r"(versionCode\\s+)\\d+", r"\\g<1>8", gradle_text, count=1
+              r"(versionCode\s+)\d+", r"\g<1>8", gradle_text, count=1
           )
           gradle_text, name_count = re.subn(
-              r"""(versionName\\s+)[\\"'][^\\"']+[\\"']""",
-              r"\\g<1>'0.8.6c'",
+              r"""(versionName\s+)["'][^"']+["']""",
+              r"\g<1>'0.8.6c'",
               gradle_text,
               count=1,
           )
@@ -208,8 +208,8 @@ jobs:
           cmake_path = Path(sys.argv[2])
           cmake_text = cmake_path.read_text(encoding="utf-8")
           cmake_text, cmake_count = re.subn(
-              r"(project\\(\\s*SolarCrystal\\s+VERSION\\s+)\\d+\\.\\d+\\.\\d+",
-              r"\\g<1>0.8.6",
+              r"(project\(\s*SolarCrystal\s+VERSION\s+)\d+\.\d+\.\d+",
+              r"\g<1>0.8.6",
               cmake_text,
               count=1,
           )
