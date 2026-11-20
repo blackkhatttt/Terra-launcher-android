@@ -146,7 +146,8 @@ void execute_code(const std::vector<std::uint8_t>& code,
                 const ObjectId receiver = pop_object_reference(frame, context.heap);
                 if (field.owner_class != context.heap.class_name(receiver))
                     throw std::runtime_error("putfield owner does not match object class");
-                context.heap.define_int_field(receiver, field.name, 0);
+                if (!context.heap.has_int_field(receiver, field.name))
+                    context.heap.define_int_field(receiver, field.name, 0);
                 context.heap.put_int(receiver, field.owner_class, field.name, value.as_integer());
                 ++context.result.fields_written;
                 break;
