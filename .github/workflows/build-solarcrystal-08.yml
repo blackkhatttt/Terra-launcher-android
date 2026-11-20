@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.8.8b - First Minecraft graphics preview
+name: Build Universe Launcher 0.8.8c - Optimized voxel graphics preview
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.8.8b
+    name: Build and verify SolarCrystal 0.8.8c
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -83,6 +83,11 @@ jobs:
           grep -q "OPEN FIRST MINECRAFT GRAPHICS" terra-android/src/main/java/com/terra/android/MainActivity.java
           grep -q "glDrawArrays" terra-android/src/main/java/com/terra/android/MinecraftPreviewRenderer.java
           echo "SolarCrystal 0.8.8b OpenGL ES first graphics preview integrated."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_088c.py"
+          grep -q "SOLARCRYSTAL 0.8.8c" terra-android/src/main/java/com/terra/android/MinecraftPreviewActivity.java
+          grep -q "glDrawArrays" terra-android/src/main/java/com/terra/android/MinecraftPreviewRenderer.java
+          grep -q "SYSTEM_UI_FLAG_IMMERSIVE_STICKY" terra-android/src/main/java/com/terra/android/MinecraftPreviewActivity.java
+          echo "SolarCrystal 0.8.8c optimized fullscreen voxel preview integrated."
 
       - name: Test SolarCrystal object heap
         shell: bash
