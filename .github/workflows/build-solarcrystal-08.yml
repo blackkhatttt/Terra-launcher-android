@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.8.5 - unified typed-frame execution
+name: Build Universe Launcher 0.8.6a - class-file model
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.8.5
+    name: Build and verify SolarCrystal 0.8.6a
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -53,6 +53,9 @@ jobs:
           python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_084c.py"
           grep -q "reference_bytecode_executor.cpp" terra-android/src/main/cpp/CMakeLists.txt
           echo "SolarCrystal 0.8.4c reference bytecode executor integrated."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_086a.py"
+          grep -q "class_file_model.cpp" terra-android/src/main/cpp/CMakeLists.txt
+          echo "SolarCrystal 0.8.6a class-file model integrated."
 
       - name: Test SolarCrystal object heap
         shell: bash
@@ -99,6 +102,19 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
+      - name: Test SolarCrystal class-file model 0.8.6a
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/sc086a/classes"
+          javac --release 8 -g:none -d "$RUNNER_TEMP/sc086a/classes" solarcrystal-0.8/tests/jar-fixture/SolarCrystalObjectFixture.java
+          g++ -std=c++17 -Wall -Wextra -Werror \\
+            solarcrystal-0.8/native/class_file_model.cpp \\
+            solarcrystal-0.8/tests/native/class_file_model_test.cpp \\
+            -I solarcrystal-0.8/native \\
+            -o "$RUNNER_TEMP/sc086a/class_file_model_test"
+          "$RUNNER_TEMP/sc086a/class_file_model_test" "$RUNNER_TEMP/sc086a/classes/SolarCrystalObjectFixture.class"
+
       - name: Integrate SolarCrystal 0.8 JAR and class loaders
         shell: bash
         run: |
@@ -125,9 +141,9 @@ jobs:
           python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_jar_test.py"
           grep -q "JarClassLoadingTest.run(this)" terra-android/src/main/java/com/terra/android/MainActivity.java
           sed -i "s/versionCode 7/versionCode 8/" "$PROJECT_DIR/terra-android/build.gradle"
-          sed -i "s/versionName ['\"]0.7.0['\"]/versionName '0.8.5'/" "$PROJECT_DIR/terra-android/build.gradle"
-          sed -i "s/VERSION 0.7/VERSION 0.8.5/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
-          sed -i "s/SOLARCRYSTAL 0.7/SOLARCRYSTAL 0.8.5/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          sed -i "s/versionName ['\"]0.7.0['\"]/versionName '0.8.6a'/" "$PROJECT_DIR/terra-android/build.gradle"
+          sed -i "s/VERSION 0.7/VERSION 0.8.6a/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          sed -i "s/SOLARCRYSTAL 0.7/SOLARCRYSTAL 0.8.6a/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
           echo "JAR reader, class inspector and reference constructor runtime integrated."
 
       - name: Set up Android SDK
@@ -167,6 +183,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.8.5
+          name: Universe-Launcher-SolarCrystal-0.8.6a
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
