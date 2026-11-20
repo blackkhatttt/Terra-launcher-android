@@ -16,7 +16,9 @@ for name in ("MinecraftPreviewRenderer.java", "MinecraftPreviewActivity.java"):
 activity = java_dir / "MainActivity.java"
 text = activity.read_text(encoding="utf-8")
 text = text.replace("VERSION 0.7", "VERSION 0.8.8c")
+text = text.replace("VERSION 0.8.8b", "VERSION 0.8.8c")
 text = text.replace("SOLARCRYSTAL 0.7", "SOLARCRYSTAL 0.8.8c")
+text = text.replace("SOLARCRYSTAL 0.8.8b", "SOLARCRYSTAL 0.8.8c")
 activity.write_text(text, encoding="utf-8")
 
 manifest = android / "AndroidManifest.xml"
