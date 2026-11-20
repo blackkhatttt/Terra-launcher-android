@@ -1,5 +1,4 @@
 #include "class_file_model.h"
-#include <limits>
 #include <stdexcept>
 #include <utility>
 namespace solarcrystal { namespace {
@@ -19,31 +18,30 @@ private:
  const std::uint8_t* data_;std::size_t size_,position_=0;
  void require(std::size_t n)const{if(n>size_-position_)throw std::runtime_error("Unexpected end of class file");}
 };
-std::string cp_utf8(const std::vector<ConstantPoolEntry>& cp,std::uint16_t i){
- if (!i || i >= cp.size() || cp[i].tag != 1) {
-  throw std::runtime_error("Invalid CONSTANT_Utf8 reference");
- }
- return cp[i].text;
-}
-std::string cp_class(const std::vector<ConstantPoolEntry>& cp,std::uint16_t i){
- if (!i || i >= cp.size() || cp[i].tag != 7) {
-  throw std::runtime_error("Invalid CONSTANT_Class reference");
- }
- return cp_utf8(cp, cp[i].first);
-}
-void skip_attributes(Reader& r,const std::vector<ConstantPoolEntry>& cp,std::uint16_t n){
- for(std::uint16_t i=0;i<n;++i){(void)cp_utf8(cp,r.u2());r.skip(r.u4());}
-}
+std::string cp_utf8(const std::vector<ConstantPoolEntry>& cp,std::uint16_t i){if(!i||i>=cp.size()||cp[i].tag!=1)throw std::runtime_error("Invalid CONSTANT_Utf8 reference");return cp[i].text;}
+std::string cp_class(const std::vector<ConstantPoolEntry>& cp,std::uint16_t i){if(!i||i>=cp.size()||cp[i].tag!=7)throw std::runtime_error("Invalid CONSTANT_Class reference");return cp_utf8(cp,cp[i].first);}
+void skip_attributes(Reader& r,const std::vector<ConstantPoolEntry>& cp,std::uint16_t n){for(std::uint16_t i=0;i<n;++i){(void)cp_utf8(cp,r.u2());r.skip(r.u4());}}
 ClassMethodInfo parse_method(Reader& r,const std::vector<ConstantPoolEntry>& cp){
  ClassMethodInfo m;m.access_flags=r.u2();m.name=cp_utf8(cp,r.u2());m.descriptor=cp_utf8(cp,r.u2());
- auto count=r.u2();for(std::uint16_t i=0;i<count;++i){
+ auto count=r.u2();
+ for(std::uint16_t i=0;i<count;++i){
   auto attr=cp_utf8(cp,r.u2());auto length=r.u4();
   if(attr!="Code"){r.skip(length);continue;}
   if(m.has_code||length<12u)throw std::runtime_error("Malformed or duplicate Code attribute");
+  auto before=r.remaining();
   m.max_stack=r.u2();m.max_locals=r.u2();auto code_length=r.u4();
   if(code_length>kMaxCodeBytes||code_length>length-12u)throw std::runtime_error("Code attribute exceeds supported bounds");
-  m.code=r.byte_vector(code_length);auto exceptions=r.u2();
-  r.skip(static_cast<std::size_t>(exceptions)*8u);auto nested=r.u2();skip_attributes(r,cp,nested);m.has_code=true;
+  m.code=r.byte_vector(code_length);auto handlers=r.u2();
+  if(static_cast<std::uint64_t>(12u)+code_length+static_cast<std::uint64_t>(handlers)*8u>length)throw std::runtime_error("Exception table exceeds Code attribute bounds");
+  for(std::uint16_t h=0;h<handlers;++h){
+   CodeExceptionHandler e;e.start_pc=r.u2();e.end_pc=r.u2();e.handler_pc=r.u2();e.catch_type=r.u2();
+   if(e.start_pc>=e.end_pc||e.end_pc>code_length||e.handler_pc>=code_length)throw std::runtime_error("Invalid exception handler bytecode range");
+   if(e.catch_type)e.catch_class=cp_class(cp,e.catch_type);
+   m.exception_handlers.push_back(std::move(e));
+  }
+  skip_attributes(r,cp,r.u2());
+  if(before-r.remaining()!=length)throw std::runtime_error("Code attribute length mismatch");
+  m.has_code=true;
  }
  return m;
 }
@@ -66,9 +64,7 @@ ClassFileModel ClassFileModel::parse(const std::uint8_t* data,std::size_t size){
  auto fields=r.u2();for(std::uint16_t i=0;i<fields;++i){ClassFieldInfo f;f.access_flags=r.u2();f.name=cp_utf8(m.constant_pool_,r.u2());f.descriptor=cp_utf8(m.constant_pool_,r.u2());skip_attributes(r,m.constant_pool_,r.u2());m.fields_.push_back(std::move(f));}
  auto methods=r.u2();for(std::uint16_t i=0;i<methods;++i)m.methods_.push_back(parse_method(r,m.constant_pool_));
  skip_attributes(r,m.constant_pool_,r.u2());if(r.remaining())throw std::runtime_error("Unexpected trailing class-file bytes");
- if (m.name_.empty() || m.name_[0] == '[' || m.name_.find('.') != std::string::npos) {
-  throw std::runtime_error("Invalid internal class name");
- }
+ if(m.name_.empty()||m.name_[0]=='['||m.name_.find('.')!=std::string::npos)throw std::runtime_error("Invalid internal class name");
  return m;
 }
 const std::string& ClassFileModel::name()const{return name_;}
@@ -80,17 +76,6 @@ const std::vector<ConstantPoolEntry>& ClassFileModel::constant_pool()const{retur
 std::uint16_t ClassFileModel::access_flags()const{return access_flags_;}
 std::uint16_t ClassFileModel::major_version()const{return major_version_;}
 std::string ClassFileModel::class_name_at(std::uint16_t i)const{return cp_class(constant_pool_,i);}
-ResolvedMemberReference ClassFileModel::member_reference_at(std::uint16_t i)const{
- if(!i||i>=constant_pool_.size())throw std::runtime_error("Invalid member reference constant-pool index");
- const auto& ref=constant_pool_[i];if(ref.tag!=9&&ref.tag!=10&&ref.tag!=11)throw std::runtime_error("Constant-pool entry is not a member reference");
- if(!ref.second||ref.second>=constant_pool_.size())throw std::runtime_error("Invalid NameAndType constant-pool index");
- const auto& nt=constant_pool_[ref.second];if(nt.tag!=12)throw std::runtime_error("Expected CONSTANT_NameAndType");
- return {ref.tag,class_name_at(ref.first),cp_utf8(constant_pool_,nt.first),cp_utf8(constant_pool_,nt.second)};
-}
-const ClassMethodInfo* ClassFileModel::find_method(const std::string& n,const std::string& d)const{
- for (const auto& method : methods_) {
-  if (method.name == n && method.descriptor == d) return &method;
- }
- return nullptr;
-}
+ResolvedMemberReference ClassFileModel::member_reference_at(std::uint16_t i)const{if(!i||i>=constant_pool_.size())throw std::runtime_error("Invalid member reference constant-pool index");const auto& ref=constant_pool_[i];if(ref.tag!=9&&ref.tag!=10&&ref.tag!=11)throw std::runtime_error("Constant-pool entry is not a member reference");if(!ref.second||ref.second>=constant_pool_.size())throw std::runtime_error("Invalid NameAndType constant-pool index");const auto& nt=constant_pool_[ref.second];if(nt.tag!=12)throw std::runtime_error("Expected CONSTANT_NameAndType");return {ref.tag,class_name_at(ref.first),cp_utf8(constant_pool_,nt.first),cp_utf8(constant_pool_,nt.second)};}
+const ClassMethodInfo* ClassFileModel::find_method(const std::string& n,const std::string& d)const{for(const auto& method:methods_)if(method.name==n&&method.descriptor==d)return &method;return nullptr;}
 } // namespace solarcrystal
