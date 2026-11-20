@@ -30,6 +30,7 @@ public:
                  const std::string& class_name,
                  const std::string& field_name,
                  std::int32_t value);
+    bool has_int_field(ObjectId object_id, const std::string& field_name) const;
     void define_int_field(ObjectId object_id,
                           const std::string& field_name,
                           std::int32_t initial_value = 0);
