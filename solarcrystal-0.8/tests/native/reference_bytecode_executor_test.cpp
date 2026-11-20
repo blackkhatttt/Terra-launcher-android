@@ -78,7 +78,7 @@ int main() {
     assert(throws_runtime_error([&] {
         VmFrame f(1, 2);
         (void)execute_reference_bytecode(
-            {0xbb, 0x00, 0x01}, f, heap,
+            {0xbb, 0x00, 0x01, 0x57}, f, heap,
             [](std::uint16_t) { return std::string("X"); }, 1);
     }));
 
