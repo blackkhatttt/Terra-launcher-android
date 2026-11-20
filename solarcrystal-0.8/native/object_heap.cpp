@@ -15,17 +15,14 @@ ObjectId ObjectHeap::allocate(const std::string& class_name,
 
     Instance instance;
     instance.class_name = class_name;
-
     for (const auto& field : fields) {
         if (field.name.empty())
             throw std::runtime_error("Object field name cannot be empty");
         if (!instance.int_fields.emplace(field.name, field.initial_value).second)
             throw std::runtime_error("Duplicate object field: " + field.name);
     }
-
     if (objects_.size() >= std::numeric_limits<ObjectId>::max() - 1)
         throw std::runtime_error("Object identifier space exhausted");
-
     objects_.push_back(std::move(instance));
     return static_cast<ObjectId>(objects_.size());
 }
@@ -71,12 +68,28 @@ void ObjectHeap::put_int(ObjectId object_id,
     field->second = value;
 }
 
+void ObjectHeap::define_int_field(ObjectId object_id,
+                                  const std::string& field_name,
+                                  std::int32_t initial_value) {
+    if (object_id == 0 || object_id > objects_.size())
+        throw std::runtime_error("Null or invalid object reference");
+    if (field_name.empty())
+        throw std::runtime_error("Object field name cannot be empty");
+    auto& fields = objects_[object_id - 1].int_fields;
+    if (!fields.emplace(field_name, initial_value).second)
+        throw std::runtime_error("Duplicate object field: " + field_name);
+}
+
+std::string ObjectHeap::class_name(ObjectId object_id) const {
+    if (object_id == 0 || object_id > objects_.size())
+        throw std::runtime_error("Null or invalid object reference");
+    return objects_[object_id - 1].class_name;
+}
+
 bool ObjectHeap::is_valid(ObjectId object_id) const {
     return object_id != 0 && object_id <= objects_.size();
 }
 
-std::size_t ObjectHeap::size() const {
-    return objects_.size();
-}
+std::size_t ObjectHeap::size() const { return objects_.size(); }
 
 } // namespace solarcrystal
