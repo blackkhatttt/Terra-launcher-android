@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.8.8a - Arrays support
+name: Build Universe Launcher 0.8.8b - First Minecraft graphics preview
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.8.8a
+    name: Build and verify SolarCrystal 0.8.8b
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -78,6 +78,11 @@ jobs:
           python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_088a.py"
           grep -q "array_bytecode_executor.cpp" terra-android/src/main/cpp/CMakeLists.txt
           echo "SolarCrystal 0.8.8a array runtime integrated."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_088b.py"
+          grep -q "MinecraftPreviewActivity" terra-android/src/main/AndroidManifest.xml
+          grep -q "OPEN FIRST MINECRAFT GRAPHICS" terra-android/src/main/java/com/terra/android/MainActivity.java
+          grep -q "glDrawArrays" terra-android/src/main/java/com/terra/android/MinecraftPreviewRenderer.java
+          echo "SolarCrystal 0.8.8b OpenGL ES first graphics preview integrated."
 
       - name: Test SolarCrystal object heap
         shell: bash
@@ -412,6 +417,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.8.8a
+          name: Universe-Launcher-SolarCrystal-0.8.8b
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
