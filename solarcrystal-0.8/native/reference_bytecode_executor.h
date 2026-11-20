@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <functional>
 #include <string>
+#include <utility>
 #include <vector>
 namespace solarcrystal {
 using NewClassResolver = std::function<std::string(std::uint16_t)>;
@@ -14,6 +15,16 @@ struct InstanceField {
  std::string access_class;
  std::string declared_name;
  std::vector<std::string> compatible_runtime_classes;
+ InstanceField() = default;
+ InstanceField(std::string field_name, std::string field_descriptor)
+  : name(std::move(field_name)), descriptor(std::move(field_descriptor)),
+    access_class(), declared_name(name), compatible_runtime_classes() {}
+ InstanceField(std::string field_name, std::string field_descriptor,
+               std::string access, std::string declared,
+               std::vector<std::string> compatible)
+  : name(std::move(field_name)), descriptor(std::move(field_descriptor)),
+    access_class(std::move(access)), declared_name(std::move(declared)),
+    compatible_runtime_classes(std::move(compatible)) {}
 };
 using SpecialMethodResolver = std::function<SpecialMethod(std::uint16_t)>;
 using InstanceFieldResolver = std::function<InstanceField(std::uint16_t)>;
