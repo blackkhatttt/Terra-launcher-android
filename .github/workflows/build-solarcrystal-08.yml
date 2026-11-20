@@ -432,7 +432,7 @@ jobs:
           grep -q "Class initializer:" terra-android/src/main/cpp/jni_bridge.cpp
           grep -q "versionName '0.8.9c'" terra-android/build.gradle
           echo "SolarCrystal 0.8.9c JNI static metadata bridge integrated."
-          cp solarcrystal-0.8/src/main/java/com/terra/android/SunsetVoxelDrawable.java "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/"
+          cp "$GITHUB_WORKSPACE/solarcrystal-0.8/src/main/java/com/terra/android/SunsetVoxelDrawable.java" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/"
           python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_089d.py"
           grep -q "SunsetVoxelDrawable" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
           grep -q "class SunsetVoxelDrawable" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/SunsetVoxelDrawable.java"
