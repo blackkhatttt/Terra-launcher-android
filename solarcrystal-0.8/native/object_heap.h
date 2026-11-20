@@ -30,6 +30,10 @@ public:
                  const std::string& class_name,
                  const std::string& field_name,
                  std::int32_t value);
+    void define_int_field(ObjectId object_id,
+                          const std::string& field_name,
+                          std::int32_t initial_value = 0);
+    std::string class_name(ObjectId object_id) const;
     bool is_valid(ObjectId object_id) const;
     std::size_t size() const;
 
