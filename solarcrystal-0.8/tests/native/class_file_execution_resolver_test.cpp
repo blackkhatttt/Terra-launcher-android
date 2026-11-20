@@ -35,31 +35,36 @@ int main(int argc, char** argv) {
     assert(reader && reader->has_code);
 
     ObjectHeap heap;
-    // Find the actual CONSTANT_Class entry and the Object.<init> Methodref
+    // Find the actual CONSTANT_Class entry and both constructor Methodrefs
     // in the parsed class rather than assuming compiler-assigned indexes.
     std::uint16_t class_index = 0;
     std::uint16_t object_constructor_index = 0;
+    std::uint16_t fixture_constructor_index = 0;
     for (std::uint32_t i = 1; i < model.constant_pool().size(); ++i) {
         const auto tag = model.constant_pool()[i].tag;
         if (tag == 7 && model.class_name_at(static_cast<std::uint16_t>(i)) == model.name()) {
             class_index = static_cast<std::uint16_t>(i);
         } else if (tag == 10 || tag == 11) {
             const auto ref = model.member_reference_at(static_cast<std::uint16_t>(i));
-            if (ref.owner == "java/lang/Object" && ref.name == "<init>" &&
-                ref.descriptor == "()V") {
-                object_constructor_index = static_cast<std::uint16_t>(i);
+            if (ref.name == "<init>" && ref.descriptor == "()V") {
+                if (ref.owner == "java/lang/Object") {
+                    object_constructor_index = static_cast<std::uint16_t>(i);
+                } else if (ref.owner == model.name()) {
+                    fixture_constructor_index = static_cast<std::uint16_t>(i);
+                }
             }
         }
     }
     assert(class_index != 0);
     assert(object_constructor_index != 0);
+    assert(fixture_constructor_index != 0);
 
     std::vector<std::uint8_t> code = {
         0xbb, static_cast<std::uint8_t>(class_index >> 8),
         static_cast<std::uint8_t>(class_index & 0xff),
         0x59,
-        0xb7, static_cast<std::uint8_t>(object_constructor_index >> 8),
-        static_cast<std::uint8_t>(object_constructor_index & 0xff),
+        0xb7, static_cast<std::uint8_t>(fixture_constructor_index >> 8),
+        static_cast<std::uint8_t>(fixture_constructor_index & 0xff),
         0x4b
     };
     VmFrame allocation_frame(2, 4);
