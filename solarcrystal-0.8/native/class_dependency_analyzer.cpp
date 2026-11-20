@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <set>
 #include <stdexcept>
+#include <utility>
 
 namespace solarcrystal {
 namespace {
