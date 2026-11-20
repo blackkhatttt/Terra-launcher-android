@@ -8,7 +8,7 @@ include_dir=cpp/"include"
 if not include_dir.is_dir(): raise SystemExit("Native include directory missing")
 for name in ("class_file_repository.h","class_file_execution_resolver.h","reference_bytecode_executor.h"):
  (include_dir/name).write_text((native/name).read_text(encoding="utf-8"),encoding="utf-8")
-for name in ("class_file_execution_resolver.cpp","reference_bytecode_executor.cpp"):
+for name in ("class_file_repository.cpp","class_file_execution_resolver.cpp","reference_bytecode_executor.cpp"):
  (cpp/name).write_text((native/name).read_text(encoding="utf-8"),encoding="utf-8")
 cmake=(cpp/"CMakeLists.txt").read_text(encoding="utf-8")
 for name in ("class_file_execution_resolver.cpp","reference_bytecode_executor.cpp"):
