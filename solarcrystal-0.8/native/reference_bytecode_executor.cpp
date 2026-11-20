@@ -18,16 +18,20 @@ std::uint16_t read_u2(const std::vector<std::uint8_t>& code, std::size_t& pc) {
     return static_cast<std::uint16_t>((high << 8) | low);
 }
 
-VmValue load_reference(const VmFrame& frame, std::size_t index) {
+VmValue load_reference(const VmFrame& frame, std::size_t index, const ObjectHeap& heap) {
     const VmValue& value = frame.get_local(index);
     if (!value.is_reference() && !value.is_null())
         throw std::runtime_error("aload requires a reference or null local");
+    if (value.is_reference() && !heap.is_valid(value.as_reference()))
+        throw std::runtime_error("aload encountered an invalid object reference");
     return value;
 }
 
-void store_reference(VmFrame& frame, std::size_t index, const VmValue& value) {
+void store_reference(VmFrame& frame, std::size_t index, const VmValue& value, const ObjectHeap& heap) {
     if (!value.is_reference() && !value.is_null())
         throw std::runtime_error("astore requires a reference or null value");
+    if (value.is_reference() && !heap.is_valid(value.as_reference()))
+        throw std::runtime_error("astore encountered an invalid object reference");
     frame.set_local(index, value);
 }
 
@@ -52,25 +56,25 @@ ReferenceExecutionResult execute_reference_bytecode(
         const std::uint8_t opcode = read_u1(code, pc);
         switch (opcode) {
             case 0x19: // aload
-                frame.push(load_reference(frame, read_u1(code, pc)));
+                frame.push(load_reference(frame, read_u1(code, pc), heap));
                 break;
 
             case 0x2a: case 0x2b: case 0x2c: case 0x2d: // aload_0..aload_3
-                frame.push(load_reference(frame, opcode - 0x2a));
+                frame.push(load_reference(frame, opcode - 0x2a, heap));
                 break;
 
             case 0x3a: // astore
                 {
                     const auto index = read_u1(code, pc);
                     const auto value = frame.pop();
-                    store_reference(frame, index, value);
+                    store_reference(frame, index, value, heap);
                 }
                 break;
 
             case 0x4b: case 0x4c: case 0x4d: case 0x4e: // astore_0..astore_3
                 {
                     const auto value = frame.pop();
-                    store_reference(frame, opcode - 0x4b, value);
+                    store_reference(frame, opcode - 0x4b, value, heap);
                 }
                 break;
 
