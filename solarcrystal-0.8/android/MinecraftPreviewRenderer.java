@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-/** Optimized generated voxel scene used only as a SolarCrystal graphics proof. */
+/** Interactive generated voxel scene; this is a renderer test, not the Minecraft client. */
 final class MinecraftPreviewRenderer implements GLSurfaceView.Renderer {
     private static final String VERTEX =
         "attribute vec3 aPosition; attribute vec4 aColor; uniform mat4 uMVP; varying vec4 vColor; " +
@@ -24,14 +24,24 @@ final class MinecraftPreviewRenderer implements GLSurfaceView.Renderer {
     private final float[] projection = new float[16];
     private final float[] view = new float[16];
     private final float[] vp = new float[16];
-    private int surfaceWidth = 1, surfaceHeight = 1;
+    private float yaw = 38f;
+    private float pitch = 28f;
+    private float distance = 20f;
+
+    void setOrbit(float nextYaw, float nextPitch) {
+        yaw = nextYaw;
+        pitch = Math.max(12f, Math.min(65f, nextPitch));
+    }
+
+    void zoomBy(float scale) {
+        if (scale <= 0f) return;
+        distance = Math.max(12f, Math.min(32f, distance / scale));
+    }
 
     @Override public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         GLES20.glClearColor(0.48f, 0.72f, 0.96f, 1f);
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
-        // Disable face culling: all six cube faces must remain visible on GLES drivers.
         GLES20.glDisable(GLES20.GL_CULL_FACE);
-
         program = linkProgram(VERTEX, FRAGMENT);
         positionHandle = GLES20.glGetAttribLocation(program, "aPosition");
         colorHandle = GLES20.glGetAttribLocation(program, "aColor");
@@ -40,21 +50,26 @@ final class MinecraftPreviewRenderer implements GLSurfaceView.Renderer {
     }
 
     @Override public void onSurfaceChanged(GL10 gl, int width, int height) {
-        surfaceWidth = Math.max(1, width);
-        surfaceHeight = Math.max(1, height);
-        GLES20.glViewport(0, 0, surfaceWidth, surfaceHeight);
+        int safeWidth = Math.max(1, width);
+        int safeHeight = Math.max(1, height);
+        GLES20.glViewport(0, 0, safeWidth, safeHeight);
         Matrix.perspectiveM(projection, 0, 52f,
-            (float) surfaceWidth / (float) surfaceHeight, 0.1f, 100f);
+            (float) safeWidth / (float) safeHeight, 0.1f, 100f);
     }
 
     @Override public void onDrawFrame(GL10 gl) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         GLES20.glUseProgram(program);
 
-        Matrix.setLookAtM(view, 0,
-            11.5f, 9.5f, 14.5f,
-            0f, 0.7f, 0f,
-            0f, 1f, 0f);
+        double angle = Math.toRadians(yaw);
+        double elevation = Math.toRadians(pitch);
+        float horizontal = (float) (Math.cos(elevation) * distance);
+        float eyeX = (float) (Math.sin(angle) * horizontal);
+        float eyeZ = (float) (Math.cos(angle) * horizontal);
+        float eyeY = (float) (Math.sin(elevation) * distance);
+
+        Matrix.setLookAtM(view, 0, eyeX, eyeY + 0.7f, eyeZ,
+            0f, 0.7f, 0f, 0f, 1f, 0f);
         Matrix.multiplyMM(vp, 0, projection, 0, view, 0);
         GLES20.glUniformMatrix4fv(mvpHandle, 1, false, vp, 0);
 
@@ -91,7 +106,6 @@ final class MinecraftPreviewRenderer implements GLSurfaceView.Renderer {
             }
         }
 
-        // A few smaller, separated trees with compact canopies.
         int[][] trees = {{-4, -3}, {2, -4}, {4, 2}, {-2, 4}};
         for (int[] tree : trees) {
             int x = tree[0], z = tree[1], base = terrainHeight(x, z);
@@ -107,7 +121,6 @@ final class MinecraftPreviewRenderer implements GLSurfaceView.Renderer {
             appendCube(positions, colors, x, crown + 1, z, leaf, leaf);
         }
 
-        // A short stone patch gives the scene a second block material.
         for (int x = -1; x <= 1; x++)
             appendCube(positions, colors, x, terrainHeight(x, 0), 0, stone, stone);
 
