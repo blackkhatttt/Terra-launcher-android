@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
     ClassDependencyAnalyzer analyzer;
     const auto report = analyzer.analyze(target, repository);
 
-    assert(contains(report.registered, "SolarCrystalObjectFixture"));
+    assert(contains(report.registered, "SolarCrystalSecondaryFixture"));
     assert(contains(report.registered, "SolarCrystalMarkerFixture"));
     assert(contains(report.platform, "java/lang/Object"));
     assert(contains(report.unresolved, "SolarCrystalMissingFixture"));
