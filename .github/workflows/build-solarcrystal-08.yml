@@ -65,7 +65,10 @@ jobs:
           echo "SolarCrystal 0.8.6d parsed method executor integrated."
           python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_087a.py"
           grep -q "class_dependency_analyzer.cpp" terra-android/src/main/cpp/CMakeLists.txt
-          echo "SolarCrystal 0.8.7b dependency analyzer integrated."
+          echo "SolarCrystal 0.8.7a dependency analyzer integrated."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_087b.py"
+          grep -q "find_inherited_field" terra-android/src/main/cpp/class_file_execution_resolver.cpp
+          echo "SolarCrystal 0.8.7b inherited fields integrated."
 
       - name: Test SolarCrystal object heap
         shell: bash
@@ -295,7 +298,7 @@ jobs:
                   break
           if cmake_updated:
               cmake_path.write_text("\n".join(cmake_lines) + "\n", encoding="utf-8")
-              print("CMake native version set to 0.8.6.")
+              print("CMake native version set to 0.8.7.")
           else:
               print("No numeric SolarCrystal project version found; leaving CMake declaration unchanged.")
 
