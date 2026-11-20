@@ -4,12 +4,14 @@
 #include <string>
 #include <vector>
 namespace solarcrystal {
-struct ConstantPoolEntry { std::uint8_t tag=0; std::uint16_t first=0, second=0; std::string text; };
-struct ClassFieldInfo { std::uint16_t access_flags=0; std::string name, descriptor; };
-struct CodeExceptionHandler {
- std::uint16_t start_pc=0, end_pc=0, handler_pc=0, catch_type=0;
- std::string catch_class;
+struct ConstantPoolEntry { std::uint8_t tag=0; std::uint16_t first=0, second=0; std::uint64_t bits=0; std::string text; };
+struct ClassFieldInfo {
+ std::uint16_t access_flags=0, constant_value_index=0;
+ std::string name, descriptor;
+ bool is_static() const { return (access_flags & 0x0008u)!=0; }
+ bool has_constant_value() const { return constant_value_index!=0; }
 };
+struct CodeExceptionHandler { std::uint16_t start_pc=0, end_pc=0, handler_pc=0, catch_type=0; std::string catch_class; };
 struct ClassMethodInfo {
  std::uint16_t access_flags=0;
  std::string name, descriptor;
@@ -31,6 +33,8 @@ public:
  std::string class_name_at(std::uint16_t index) const;
  ResolvedMemberReference member_reference_at(std::uint16_t index) const;
  const ClassMethodInfo* find_method(const std::string& name,const std::string& descriptor) const;
+ const ClassMethodInfo* class_initializer() const;
+ const ConstantPoolEntry& constant_value(const ClassFieldInfo& field) const;
 private:
  std::string name_, super_name_;
  std::vector<std::string> interfaces_;
