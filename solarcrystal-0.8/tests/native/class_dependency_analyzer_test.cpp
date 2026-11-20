@@ -49,7 +49,8 @@ int main(int argc, char** argv) {
 
     assert(contains(report.registered, "SolarCrystalSecondaryFixture"));
     assert(contains(report.registered, "SolarCrystalMarkerFixture"));
-    assert(contains(report.platform, "java/lang/Object"));
+    const auto parent_report = analyzer.analyze(parent, repository);
+    assert(contains(parent_report.platform, "java/lang/Object"));
     assert(contains(report.unresolved, "SolarCrystalMissingFixture"));
     assert(!contains(report.registered, target.name()));
     assert(!contains(report.platform, target.name()));
