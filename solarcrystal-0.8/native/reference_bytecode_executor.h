@@ -10,21 +10,30 @@ namespace solarcrystal {
 using NewClassResolver = std::function<std::string(std::uint16_t)>;
 struct SpecialMethod { std::string owner_class; std::string name; std::string descriptor; std::vector<std::uint8_t> code; std::size_t max_locals=1; std::size_t max_stack=1; };
 struct InstanceField {
+ std::string owner_class;
  std::string name;
  std::string descriptor;
  std::string access_class;
  std::string declared_name;
  std::vector<std::string> compatible_runtime_classes;
  InstanceField() = default;
- InstanceField(std::string owner_class, std::string field_name)
-  : name(std::move(field_name)), descriptor("I"),
-    access_class(std::move(owner_class)), declared_name(name),
+ InstanceField(std::string owner, std::string field_name)
+  : owner_class(owner), name(std::move(field_name)), descriptor("I"),
+    access_class(std::move(owner)), declared_name(name),
     compatible_runtime_classes{access_class} {}
  InstanceField(std::string field_name, std::string field_descriptor,
                std::string access, std::string declared,
                std::vector<std::string> compatible)
-  : name(std::move(field_name)), descriptor(std::move(field_descriptor)),
-    access_class(std::move(access)), declared_name(std::move(declared)),
+  : owner_class(access), name(std::move(field_name)),
+    descriptor(std::move(field_descriptor)), access_class(std::move(access)),
+    declared_name(std::move(declared)),
+    compatible_runtime_classes(std::move(compatible)) {}
+ InstanceField(std::string owner, std::string field_name, std::string field_descriptor,
+               std::string access, std::string declared,
+               std::vector<std::string> compatible)
+  : owner_class(std::move(owner)), name(std::move(field_name)),
+    descriptor(std::move(field_descriptor)), access_class(std::move(access)),
+    declared_name(std::move(declared)),
     compatible_runtime_classes(std::move(compatible)) {}
 };
 using SpecialMethodResolver = std::function<SpecialMethod(std::uint16_t)>;
