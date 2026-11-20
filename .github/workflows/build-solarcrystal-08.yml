@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.8.6b - Constant Pool execution
+name: Build Universe Launcher 0.8.6c - Multi-class resolution
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.8.6b
+    name: Build and verify SolarCrystal 0.8.6c
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -58,7 +58,9 @@ jobs:
           echo "SolarCrystal 0.8.6a class-file model integrated."
           python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_086b.py"
           grep -q "class_file_execution_resolver.cpp" terra-android/src/main/cpp/CMakeLists.txt
-          echo "SolarCrystal 0.8.6b Constant Pool execution resolver integrated."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_086c.py"
+          grep -q "class_file_repository.cpp" terra-android/src/main/cpp/CMakeLists.txt
+          echo "SolarCrystal 0.8.6c multi-class class repository integrated."
 
       - name: Test SolarCrystal object heap
         shell: bash
@@ -135,6 +137,28 @@ jobs:
             -o "$RUNNER_TEMP/sc086b/class_file_execution_resolver_test"
           "$RUNNER_TEMP/sc086b/class_file_execution_resolver_test" "$RUNNER_TEMP/sc086b/classes/SolarCrystalObjectFixture.class"
 
+      - name: Test SolarCrystal multi-class resolution 0.8.6c
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/sc086c/classes"
+          javac --release 8 -g:none -d "$RUNNER_TEMP/sc086c/classes" \
+            solarcrystal-0.8/tests/jar-fixture/SolarCrystalObjectFixture.java \
+            solarcrystal-0.8/tests/jar-fixture/SolarCrystalSecondaryFixture.java
+          g++ -std=c++17 -Wall -Wextra -Werror \
+            solarcrystal-0.8/native/object_heap.cpp \
+            solarcrystal-0.8/native/vm_value.cpp \
+            solarcrystal-0.8/native/reference_bytecode_executor.cpp \
+            solarcrystal-0.8/native/class_file_model.cpp \
+            solarcrystal-0.8/native/class_file_repository.cpp \
+            solarcrystal-0.8/native/class_file_execution_resolver.cpp \
+            solarcrystal-0.8/tests/native/class_file_repository_test.cpp \
+            -I solarcrystal-0.8/native \
+            -o "$RUNNER_TEMP/sc086c/class_file_repository_test"
+          "$RUNNER_TEMP/sc086c/class_file_repository_test" \
+            "$RUNNER_TEMP/sc086c/classes/SolarCrystalObjectFixture.class" \
+            "$RUNNER_TEMP/sc086c/classes/SolarCrystalSecondaryFixture.class"
+
       - name: Integrate SolarCrystal 0.8 JAR and class loaders
         shell: bash
         run: |
@@ -161,9 +185,9 @@ jobs:
           python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_jar_test.py"
           grep -q "JarClassLoadingTest.run(this)" terra-android/src/main/java/com/terra/android/MainActivity.java
           sed -i "s/versionCode 7/versionCode 8/" "$PROJECT_DIR/terra-android/build.gradle"
-          sed -i "s/versionName ['\"]0.7.0['\"]/versionName '0.8.6b'/" "$PROJECT_DIR/terra-android/build.gradle"
-          sed -i "s/VERSION 0.7/VERSION 0.8.6b/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
-          sed -i "s/SOLARCRYSTAL 0.7/SOLARCRYSTAL 0.8.6b/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          sed -i "s/versionName ['\"]0.7.0['\"]/versionName '0.8.6c'/" "$PROJECT_DIR/terra-android/build.gradle"
+          sed -i "s/VERSION 0.7/VERSION 0.8.6c/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          sed -i "s/SOLARCRYSTAL 0.7/SOLARCRYSTAL 0.8.6c/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
           echo "JAR reader, class inspector and reference constructor runtime integrated."
 
       - name: Set up Android SDK
@@ -203,6 +227,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.8.6b
+          name: Universe-Launcher-SolarCrystal-0.8.6c
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
