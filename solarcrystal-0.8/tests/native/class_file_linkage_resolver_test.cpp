@@ -33,8 +33,9 @@ int main(int argc,char** argv) {
   if(ref.name=="inheritedMethod" && (tag==10 || tag==11)) {
    assert(!resolved.is_field && resolved.declaring_class==base.name()); inherited_method=true;
   }
-  if(ref.name=="interfaceDefaultMethod" && tag==11) {
-   assert(resolved.from_interface && resolved.declaring_class==iface.name()); interface_method=true;
+  if(ref.name=="interfaceDefaultMethod" && (tag==10 || tag==11)) {
+   assert(!resolved.is_field && resolved.from_interface);
+   assert(resolved.declaring_class==iface.name()); interface_method=true;
   }
  }
  assert(field && inherited_method && interface_method);
