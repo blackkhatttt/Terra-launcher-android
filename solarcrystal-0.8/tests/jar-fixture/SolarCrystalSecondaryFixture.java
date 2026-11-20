@@ -13,6 +13,10 @@ public class SolarCrystalSecondaryFixture {
         primary.value = next;
     }
 
+    public static int sum(int left, int right) {
+        return left + right;
+    }
+
     public SolarCrystalObjectFixture makePrimary() {
         return new SolarCrystalObjectFixture();
     }
