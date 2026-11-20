@@ -35,16 +35,6 @@ int main(int argc, char** argv) {
     assert(reader && reader->has_code);
 
     ObjectHeap heap;
-    VmFrame constructor_frame(constructor->max_locals, constructor->max_stack);
-    const std::vector<std::uint8_t> allocate_and_construct = {
-        0xbb,
-        static_cast<std::uint8_t>(0), static_cast<std::uint8_t>(1),
-        0x59,
-        0xb7,
-        0, 0,
-        0x4b
-    };
-
     // Find the actual CONSTANT_Class entry and the Object.<init> Methodref
     // in the parsed class rather than assuming compiler-assigned indexes.
     std::uint16_t class_index = 0;
