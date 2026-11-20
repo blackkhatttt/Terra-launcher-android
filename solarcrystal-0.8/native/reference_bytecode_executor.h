@@ -16,9 +16,10 @@ struct InstanceField {
  std::string declared_name;
  std::vector<std::string> compatible_runtime_classes;
  InstanceField() = default;
- InstanceField(std::string field_name, std::string field_descriptor)
-  : name(std::move(field_name)), descriptor(std::move(field_descriptor)),
-    access_class(), declared_name(name), compatible_runtime_classes() {}
+ InstanceField(std::string owner_class, std::string field_name)
+  : name(std::move(field_name)), descriptor("I"),
+    access_class(std::move(owner_class)), declared_name(name),
+    compatible_runtime_classes{access_class} {}
  InstanceField(std::string field_name, std::string field_descriptor,
                std::string access, std::string declared,
                std::vector<std::string> compatible)
