@@ -124,14 +124,14 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/sc086b/classes"
           javac --release 8 -g:none -d "$RUNNER_TEMP/sc086b/classes" solarcrystal-0.8/tests/jar-fixture/SolarCrystalObjectFixture.java
-          g++ -std=c++17 -Wall -Wextra -Werror \\
-            solarcrystal-0.8/native/object_heap.cpp \\
-            solarcrystal-0.8/native/vm_value.cpp \\
-            solarcrystal-0.8/native/reference_bytecode_executor.cpp \\
-            solarcrystal-0.8/native/class_file_model.cpp \\
-            solarcrystal-0.8/native/class_file_execution_resolver.cpp \\
-            solarcrystal-0.8/tests/native/class_file_execution_resolver_test.cpp \\
-            -I solarcrystal-0.8/native \\
+          g++ -std=c++17 -Wall -Wextra -Werror \
+            solarcrystal-0.8/native/object_heap.cpp \
+            solarcrystal-0.8/native/vm_value.cpp \
+            solarcrystal-0.8/native/reference_bytecode_executor.cpp \
+            solarcrystal-0.8/native/class_file_model.cpp \
+            solarcrystal-0.8/native/class_file_execution_resolver.cpp \
+            solarcrystal-0.8/tests/native/class_file_execution_resolver_test.cpp \
+            -I solarcrystal-0.8/native \
             -o "$RUNNER_TEMP/sc086b/class_file_execution_resolver_test"
           "$RUNNER_TEMP/sc086b/class_file_execution_resolver_test" "$RUNNER_TEMP/sc086b/classes/SolarCrystalObjectFixture.class"
 
