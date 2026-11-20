@@ -186,36 +186,43 @@ jobs:
           python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_jar_test.py"
           grep -q "JarClassLoadingTest.run(this)" terra-android/src/main/java/com/terra/android/MainActivity.java
           python3 - "$PROJECT_DIR/terra-android/build.gradle" "$PROJECT_DIR/terra-android/src/main/cpp/CMakeLists.txt" <<'PY'
-          import re
           import sys
           from pathlib import Path
 
           gradle_path = Path(sys.argv[1])
-          gradle_text = gradle_path.read_text(encoding="utf-8")
-          gradle_text, code_count = re.subn(
-              r"(versionCode\s+)\d+", r"\g<1>8", gradle_text, count=1
-          )
-          gradle_text, name_count = re.subn(
-              r"""(versionName\s+)["'][^"']+["']""",
-              r"\g<1>'0.8.6c'",
-              gradle_text,
-              count=1,
-          )
+          gradle_lines = gradle_path.read_text(encoding="utf-8").splitlines()
+          code_count = 0
+          name_count = 0
+          for index, line in enumerate(gradle_lines):
+              stripped = line.strip()
+              indent = line[:len(line) - len(line.lstrip())]
+              if stripped.startswith("versionCode "):
+                  gradle_lines[index] = indent + "versionCode 8"
+                  code_count += 1
+              elif stripped.startswith("versionName "):
+                  gradle_lines[index] = indent + "versionName '0.8.6c'"
+                  name_count += 1
           if code_count != 1 or name_count != 1:
               raise SystemExit("Could not update Android versionCode/versionName")
-          gradle_path.write_text(gradle_text, encoding="utf-8")
+          gradle_path.write_text("\\n".join(gradle_lines) + "\\n", encoding="utf-8")
 
           cmake_path = Path(sys.argv[2])
-          cmake_text = cmake_path.read_text(encoding="utf-8")
-          cmake_text, cmake_count = re.subn(
-              r"(project\(\s*SolarCrystal\s+VERSION\s+)\d+\.\d+\.\d+",
-              r"\g<1>0.8.6",
-              cmake_text,
-              count=1,
-          )
-          if cmake_count:
-              cmake_path.write_text(cmake_text, encoding="utf-8")
-              print("CMake native version set to 0.8.6 (numeric CMake version).")
+          cmake_lines = cmake_path.read_text(encoding="utf-8").splitlines()
+          cmake_updated = False
+          marker = "project(SolarCrystal VERSION "
+          for index, line in enumerate(cmake_lines):
+              if marker not in line:
+                  continue
+              prefix, suffix = line.split(marker, 1)
+              current_version = suffix.split()[0]
+              version_parts = current_version.split(".")
+              if len(version_parts) == 3 and all(part.isdigit() for part in version_parts):
+                  cmake_lines[index] = prefix + marker + "0.8.6" + suffix[len(current_version):]
+                  cmake_updated = True
+                  break
+          if cmake_updated:
+              cmake_path.write_text("\\n".join(cmake_lines) + "\\n", encoding="utf-8")
+              print("CMake native version set to 0.8.6.")
           else:
               print("No numeric SolarCrystal project version found; leaving CMake declaration unchanged.")
 
