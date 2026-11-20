@@ -68,6 +68,13 @@ void ObjectHeap::put_int(ObjectId object_id,
     field->second = value;
 }
 
+bool ObjectHeap::has_int_field(ObjectId object_id, const std::string& field_name) const {
+    if (object_id == 0 || object_id > objects_.size())
+        throw std::runtime_error("Null or invalid object reference");
+    return objects_[object_id - 1].int_fields.find(field_name) !=
+           objects_[object_id - 1].int_fields.end();
+}
+
 void ObjectHeap::define_int_field(ObjectId object_id,
                                   const std::string& field_name,
                                   std::int32_t initial_value) {
