@@ -28,23 +28,23 @@ shutil.copyfile(icon, legacy / "ic_launcher.png")
 adaptive = res / "mipmap-anydpi-v26"
 adaptive.mkdir(parents=True, exist_ok=True)
 (adaptive / "ic_launcher.xml").write_text(
-    '<?xml version="1.0" encoding="utf-8"?>\\n'
-    '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\\n'
-    '  <background android:drawable="@color/launcher_icon_background" />\\n'
-    '  <foreground android:drawable="@mipmap/ic_launcher" />\\n'
-    '</adaptive-icon>\\n', encoding="utf-8")
+    '<?xml version="1.0" encoding="utf-8"?>\n'
+    '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
+    '  <background android:drawable="@color/launcher_icon_background" />\n'
+    '  <foreground android:drawable="@mipmap/ic_launcher" />\n'
+    '</adaptive-icon>\n', encoding="utf-8")
 values = res / "values"
 values.mkdir(parents=True, exist_ok=True)
 (values / "launcher_colors.xml").write_text(
-    '<?xml version="1.0" encoding="utf-8"?>\\n'
-    '<resources><color name="launcher_icon_background">#080D24</color></resources>\\n',
+    '<?xml version="1.0" encoding="utf-8"?>\n'
+    '<resources><color name="launcher_icon_background">#080D24</color></resources>\n',
     encoding="utf-8")
 
 m = manifest.read_text(encoding="utf-8")
 if 'android:icon="@mipmap/ic_launcher"' not in m:
     m = m.replace('android:label="Universe Launcher"',
-                  'android:label="Universe Launcher"\\n'
-                  '        android:icon="@mipmap/ic_launcher"\\n'
+                  'android:label="Universe Launcher"\n'
+                  '        android:icon="@mipmap/ic_launcher"\n'
                   '        android:roundIcon="@mipmap/ic_launcher"')
 manifest.write_text(m, encoding="utf-8")
 
@@ -52,7 +52,7 @@ manifest.write_text(m, encoding="utf-8")
 text = java.read_text(encoding="utf-8")
 changes = [
     ("cardShape.setColor(panel);",
-     "cardShape.setColors(new int[] { Color.argb(242, 20, 36, 68), Color.argb(226, 9, 18, 42) });\\n"
+     "cardShape.setColors(new int[] { Color.argb(242, 20, 36, 68), Color.argb(226, 9, 18, 42) });\n"
      "        cardShape.setOrientation(android.graphics.drawable.GradientDrawable.Orientation.TL_BR);"),
     ("cardShape.setCornerRadius(dp(18));", "cardShape.setCornerRadius(dp(22));"),
     ("cardShape.setStroke(dp(1), Color.argb(70, 130, 210, 255));",
@@ -69,7 +69,7 @@ for old, new in changes:
 
 # Add a subtle press feedback to the existing rounded buttons.
 needle = "button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);"
-replacement = needle + "\\n        button.setStateListAnimator(android.animation.StateListAnimator.class.cast(button.getStateListAnimator()));"
+replacement = needle + "\n        button.setStateListAnimator(android.animation.StateListAnimator.class.cast(button.getStateListAnimator()));"
 # Keep native Android state animation untouched; the rounded gradient surfaces already provide feedback.
 # Increase the header contrast and keep the existing wording and layout intact.
 text = text.replace("logo.setShadowLayer(dp(8), 0, dp(2), Color.rgb(8, 13, 30));",
@@ -90,6 +90,6 @@ for i, line in enumerate(lines):
         names += 1
 if codes != 1 or names != 1:
     raise SystemExit("Could not set Android version to 0.8.9e")
-gradle.write_text("\\n".join(lines) + "\\n", encoding="utf-8")
+gradle.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 print("Universe Launcher 0.8.9e icon and refined interface integrated.")
