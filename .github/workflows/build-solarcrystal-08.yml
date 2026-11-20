@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.8.8c - Optimized voxel graphics preview
+name: Build Universe Launcher 0.8.8d - Interactive voxel preview
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.8.8c
+    name: Build and verify SolarCrystal 0.8.8d
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -384,6 +384,13 @@ jobs:
           sed -i "s/VERSION 0.7/VERSION 0.8.8a/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
           sed -i "s/SOLARCRYSTAL 0.7/SOLARCRYSTAL 0.8.8a/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
           echo "JAR reader, class inspector and reference constructor runtime integrated."
+          cd "$PROJECT_DIR"
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_088d.py"
+          grep -q "DRAG TO ROTATE" terra-android/src/main/java/com/terra/android/MinecraftPreviewActivity.java
+          grep -q "zoomBy" terra-android/src/main/java/com/terra/android/MinecraftPreviewRenderer.java
+          grep -q "versionCode 10" terra-android/build.gradle
+          grep -q "versionName '0.8.8d'" terra-android/build.gradle
+          echo "SolarCrystal 0.8.8d interactive touch preview integrated."
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
@@ -422,6 +429,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.8.8b
+          name: Universe-Launcher-SolarCrystal-0.8.8d
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
