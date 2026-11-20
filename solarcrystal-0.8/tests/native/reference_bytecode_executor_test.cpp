@@ -37,6 +37,8 @@ int main() {
     assert(frame.get_local(1).is_reference());
     assert(frame.get_local(0).as_reference() == frame.get_local(1).as_reference());
     assert(heap.is_valid(frame.get_local(0).as_reference()));
+    assert(frame.stack_size() == 1);
+    assert(frame.pop().as_reference() == frame.get_local(0).as_reference());
     assert(frame.stack_size() == 0);
 
     // Explicit-index aload/astore and null references.
