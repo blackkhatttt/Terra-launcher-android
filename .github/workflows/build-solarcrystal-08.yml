@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.8.7b
+    name: Build and verify SolarCrystal 0.8.7b (retry)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
