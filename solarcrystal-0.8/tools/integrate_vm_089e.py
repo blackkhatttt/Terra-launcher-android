@@ -6,7 +6,9 @@ import shutil
 import runpy
 
 root = Path.cwd()
-# Rebuild the complete 0.8.9d UI first; the CI baseline starts from 0.7.\nrunpy.run_path(str(Path(__file__).with_name("integrate_vm_089d.py")))\napp = root / "terra-android/src/main"
+# Rebuild the complete 0.8.9d UI first; the CI baseline starts from 0.7.
+runpy.run_path(str(Path(__file__).with_name("integrate_vm_089d.py")))
+app = root / "terra-android/src/main"
 java = app / "java/com/terra/android/MainActivity.java"
 manifest = app / "AndroidManifest.xml"
 assets = Path(__file__).resolve().parent.parent / "assets"
