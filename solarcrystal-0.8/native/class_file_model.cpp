@@ -25,7 +25,8 @@ void skip_attributes(Reader& r,const std::vector<ConstantPoolEntry>& cp,std::uin
 ClassMethodInfo parse_method(Reader& r,const std::vector<ConstantPoolEntry>& cp){
  ClassMethodInfo m;m.access_flags=r.u2();m.name=cp_utf8(cp,r.u2());m.descriptor=cp_utf8(cp,r.u2());auto count=r.u2();
  for(std::uint16_t i=0;i<count;++i){auto attr=cp_utf8(cp,r.u2());auto length=r.u4();if(attr!="Code"){r.skip(length);continue;}
-  if(m.has_code||length<12u)throw std::runtime_error("Malformed or duplicate Code attribute");auto before=r.remaining();
+  if(m.has_code||length<12u) throw std::runtime_error("Malformed or duplicate Code attribute");
+  auto before=r.remaining();
   m.max_stack=r.u2();m.max_locals=r.u2();auto code_length=r.u4();if(code_length>kMaxCodeBytes||code_length>length-12u)throw std::runtime_error("Code attribute exceeds supported bounds");
   m.code=r.byte_vector(code_length);auto handlers=r.u2();if(static_cast<std::uint64_t>(12u)+code_length+static_cast<std::uint64_t>(handlers)*8u>length)throw std::runtime_error("Exception table exceeds Code attribute bounds");
   for(std::uint16_t h=0;h<handlers;++h){CodeExceptionHandler e;e.start_pc=r.u2();e.end_pc=r.u2();e.handler_pc=r.u2();e.catch_type=r.u2();if(e.start_pc>=e.end_pc||e.end_pc>code_length||e.handler_pc>=code_length)throw std::runtime_error("Invalid exception handler bytecode range");if(e.catch_type)e.catch_class=cp_class(cp,e.catch_type);m.exception_handlers.push_back(std::move(e));}
@@ -51,7 +52,8 @@ ClassFileModel ClassFileModel::parse(const std::uint8_t* data,std::size_t size){
  auto fields=r.u2();for(std::uint16_t i=0;i<fields;++i){ClassFieldInfo f;f.access_flags=r.u2();f.name=cp_utf8(m.constant_pool_,r.u2());f.descriptor=cp_utf8(m.constant_pool_,r.u2());auto attrs=r.u2();for(std::uint16_t a=0;a<attrs;++a){auto attr=cp_utf8(m.constant_pool_,r.u2());auto len=r.u4();if(attr=="ConstantValue"){if(f.constant_value_index||len!=2)throw std::runtime_error("Malformed or duplicate ConstantValue attribute");f.constant_value_index=r.u2();if(!f.constant_value_index||f.constant_value_index>=m.constant_pool_.size())throw std::runtime_error("Invalid ConstantValue constant-pool index");auto tag=m.constant_pool_[f.constant_value_index].tag;if(tag!=3&&tag!=4&&tag!=5&&tag!=6&&tag!=8)throw std::runtime_error("Invalid ConstantValue constant-pool tag");}else r.skip(len);}m.fields_.push_back(std::move(f));}
  auto methods=r.u2();for(std::uint16_t i=0;i<methods;++i)m.methods_.push_back(parse_method(r,m.constant_pool_));
  skip_attributes(r,m.constant_pool_,r.u2());if(r.remaining())throw std::runtime_error("Unexpected trailing class-file bytes");
- if(m.name_.empty()||m.name_[0]=='['||m.name_.find('.')!=std::string::npos)throw std::runtime_error("Invalid internal class name");return m;
+ if(m.name_.empty()||m.name_[0]=='['||m.name_.find('.')!=std::string::npos) throw std::runtime_error("Invalid internal class name");
+ return m;
 }
 const std::string& ClassFileModel::name()const{return name_;}
 const std::string& ClassFileModel::super_name()const{return super_name_;}
