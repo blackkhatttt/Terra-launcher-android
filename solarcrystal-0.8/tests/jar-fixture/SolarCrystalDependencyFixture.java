@@ -1,11 +1,11 @@
-public class SolarCrystalDependencyFixture extends SolarCrystalObjectFixture
+public class SolarCrystalDependencyFixture extends SolarCrystalSecondaryFixture
         implements SolarCrystalMarkerFixture {
     public SolarCrystalMissingFixture missing;
-    public SolarCrystalObjectFixture linked;
+    public SolarCrystalSecondaryFixture linked;
 
     @Override
     public int markerValue() {
-        return linked == null ? 0 : linked.readValue();
+        return linked == null ? 0 : linked.sum(20, 22);
     }
 
     public SolarCrystalMissingFixture missingValue(
