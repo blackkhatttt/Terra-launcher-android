@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.8.4d - SolarCrystal constructors
+name: Build Universe Launcher 0.8.5 - unified typed-frame execution
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.8.4d
+    name: Build and verify SolarCrystal 0.8.5
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -125,9 +125,9 @@ jobs:
           python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_jar_test.py"
           grep -q "JarClassLoadingTest.run(this)" terra-android/src/main/java/com/terra/android/MainActivity.java
           sed -i "s/versionCode 7/versionCode 8/" "$PROJECT_DIR/terra-android/build.gradle"
-          sed -i "s/versionName ['\"]0.7.0['\"]/versionName '0.8.4d'/" "$PROJECT_DIR/terra-android/build.gradle"
-          sed -i "s/VERSION 0.7/VERSION 0.8.4d/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
-          sed -i "s/SOLARCRYSTAL 0.7/SOLARCRYSTAL 0.8.4d/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          sed -i "s/versionName ['\"]0.7.0['\"]/versionName '0.8.5'/" "$PROJECT_DIR/terra-android/build.gradle"
+          sed -i "s/VERSION 0.7/VERSION 0.8.5/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          sed -i "s/SOLARCRYSTAL 0.7/SOLARCRYSTAL 0.8.5/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
           echo "JAR reader, class inspector and reference constructor runtime integrated."
 
       - name: Set up Android SDK
@@ -155,6 +155,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.8.4d
+          name: Universe-Launcher-SolarCrystal-0.8.5
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
