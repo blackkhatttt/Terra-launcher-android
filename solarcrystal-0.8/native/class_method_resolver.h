@@ -1,5 +1,6 @@
 #pragma once
 #include "class_file_repository.h"
+#include <set>
 #include <string>
 namespace solarcrystal {
 struct ResolvedClassMethod {
