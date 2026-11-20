@@ -204,7 +204,7 @@ jobs:
                   name_count += 1
           if code_count != 1 or name_count != 1:
               raise SystemExit("Could not update Android versionCode/versionName")
-          gradle_path.write_text("\\n".join(gradle_lines) + "\\n", encoding="utf-8")
+          gradle_path.write_text("\n".join(gradle_lines) + "\n", encoding="utf-8")
 
           cmake_path = Path(sys.argv[2])
           cmake_lines = cmake_path.read_text(encoding="utf-8").splitlines()
@@ -221,7 +221,7 @@ jobs:
                   cmake_updated = True
                   break
           if cmake_updated:
-              cmake_path.write_text("\\n".join(cmake_lines) + "\\n", encoding="utf-8")
+              cmake_path.write_text("\n".join(cmake_lines) + "\n", encoding="utf-8")
               print("CMake native version set to 0.8.6.")
           else:
               print("No numeric SolarCrystal project version found; leaving CMake declaration unchanged.")
