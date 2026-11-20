@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.8.6d - Parsed method execution
+name: Build Universe Launcher 0.8.7a - Class dependencies
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.8.6d
+    name: Build and verify SolarCrystal 0.8.7a
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -63,6 +63,9 @@ jobs:
           python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_086d.py"
           grep -q "class_file_method_executor.cpp" terra-android/src/main/cpp/CMakeLists.txt
           echo "SolarCrystal 0.8.6d parsed method executor integrated."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_087a.py"
+          grep -q "class_dependency_analyzer.cpp" terra-android/src/main/cpp/CMakeLists.txt
+          echo "SolarCrystal 0.8.7a dependency analyzer integrated."
 
       - name: Test SolarCrystal object heap
         shell: bash
@@ -185,6 +188,29 @@ jobs:
             "$RUNNER_TEMP/sc086d/classes/SolarCrystalObjectFixture.class" \
             "$RUNNER_TEMP/sc086d/classes/SolarCrystalSecondaryFixture.class"
 
+      - name: Test SolarCrystal class dependency analysis 0.8.7a
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/sc087a/classes"
+          javac --release 8 -g:none -d "$RUNNER_TEMP/sc087a/classes" \
+            solarcrystal-0.8/tests/jar-fixture/SolarCrystalObjectFixture.java \
+            solarcrystal-0.8/tests/jar-fixture/SolarCrystalSecondaryFixture.java \
+            solarcrystal-0.8/tests/jar-fixture/SolarCrystalMarkerFixture.java \
+            solarcrystal-0.8/tests/jar-fixture/SolarCrystalMissingFixture.java \
+            solarcrystal-0.8/tests/jar-fixture/SolarCrystalDependencyFixture.java
+          g++ -std=c++17 -Wall -Wextra -Werror \
+            solarcrystal-0.8/native/class_file_model.cpp \
+            solarcrystal-0.8/native/class_file_repository.cpp \
+            solarcrystal-0.8/native/class_dependency_analyzer.cpp \
+            solarcrystal-0.8/tests/native/class_dependency_analyzer_test.cpp \
+            -I solarcrystal-0.8/native \
+            -o "$RUNNER_TEMP/sc087a/class_dependency_analyzer_test"
+          "$RUNNER_TEMP/sc087a/class_dependency_analyzer_test" \
+            "$RUNNER_TEMP/sc087a/classes/SolarCrystalSecondaryFixture.class" \
+            "$RUNNER_TEMP/sc087a/classes/SolarCrystalMarkerFixture.class" \
+            "$RUNNER_TEMP/sc087a/classes/SolarCrystalDependencyFixture.class"
+
       - name: Integrate SolarCrystal 0.8 JAR and class loaders
         shell: bash
         run: |
@@ -225,7 +251,7 @@ jobs:
                   gradle_lines[index] = indent + "versionCode 8"
                   code_count += 1
               elif stripped.startswith("versionName "):
-                  gradle_lines[index] = indent + "versionName '0.8.6d'"
+                  gradle_lines[index] = indent + "versionName '0.8.7a'"
                   name_count += 1
           if code_count != 1 or name_count != 1:
               raise SystemExit("Could not update Android versionCode/versionName")
@@ -242,7 +268,7 @@ jobs:
               current_version = suffix.split()[0]
               version_parts = current_version.split(".")
               if len(version_parts) == 3 and all(part.isdigit() for part in version_parts):
-                  cmake_lines[index] = prefix + marker + "0.8.6" + suffix[len(current_version):]
+                  cmake_lines[index] = prefix + marker + "0.8.7" + suffix[len(current_version):]
                   cmake_updated = True
                   break
           if cmake_updated:
@@ -251,10 +277,10 @@ jobs:
           else:
               print("No numeric SolarCrystal project version found; leaving CMake declaration unchanged.")
 
-          print("Android version set to 0.8.6d.")
+          print("Android version set to 0.8.7a.")
           PY
-          sed -i "s/VERSION 0.7/VERSION 0.8.6d/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
-          sed -i "s/SOLARCRYSTAL 0.7/SOLARCRYSTAL 0.8.6d/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          sed -i "s/VERSION 0.7/VERSION 0.8.7a/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          sed -i "s/SOLARCRYSTAL 0.7/SOLARCRYSTAL 0.8.7a/" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
           echo "JAR reader, class inspector and reference constructor runtime integrated."
 
       - name: Set up Android SDK
@@ -294,6 +320,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.8.6d
+          name: Universe-Launcher-SolarCrystal-0.8.7a
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
