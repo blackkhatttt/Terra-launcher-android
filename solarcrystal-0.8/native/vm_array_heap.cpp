@@ -1,0 +1,18 @@
+#include "vm_array_heap.h"
+#include <stdexcept>
+#include <utility>
+namespace solarcrystal {
+ObjectId VmArrayHeap::encode(std::size_t i){return static_cast<ObjectId>(0x80000000u|static_cast<std::uint32_t>(i+1));}
+std::size_t VmArrayHeap::decode(ObjectId id){if((id&0x80000000u)==0||(id&0x7fffffffu)==0)throw std::runtime_error("Invalid array reference");return static_cast<std::size_t>((id&0x7fffffffu)-1);}
+const VmArrayHeap::Array& VmArrayHeap::checked(ObjectId id)const{auto i=decode(id);if(i>=arrays_.size())throw std::runtime_error("Invalid array reference");return arrays_[i];}
+VmArrayHeap::Array& VmArrayHeap::checked(ObjectId id){auto i=decode(id);if(i>=arrays_.size())throw std::runtime_error("Invalid array reference");return arrays_[i];}
+ObjectId VmArrayHeap::new_int_array(std::int32_t n){if(n<0||static_cast<std::size_t>(n)>MAX_ARRAY_LENGTH)throw std::runtime_error("Negative or excessive array length");if(arrays_.size()>=MAX_ARRAYS)throw std::runtime_error("Array heap limit exceeded");Array a;a.ints.resize(static_cast<std::size_t>(n));arrays_.push_back(std::move(a));return encode(arrays_.size()-1);}
+ObjectId VmArrayHeap::new_reference_array(std::int32_t n,const std::string& c){if(c.empty())throw std::runtime_error("Reference array requires component class");if(n<0||static_cast<std::size_t>(n)>MAX_ARRAY_LENGTH)throw std::runtime_error("Negative or excessive array length");if(arrays_.size()>=MAX_ARRAYS)throw std::runtime_error("Array heap limit exceeded");Array a;a.references=true;a.component=c;a.refs.resize(static_cast<std::size_t>(n),VmValue::null_reference());arrays_.push_back(std::move(a));return encode(arrays_.size()-1);}
+std::size_t VmArrayHeap::length(ObjectId id)const{const auto&a=checked(id);return a.references?a.refs.size():a.ints.size();}
+bool VmArrayHeap::is_array(ObjectId id)const{try{(void)checked(id);return true;}catch(...){return false;}}
+std::int32_t VmArrayHeap::get_int(ObjectId id,std::int32_t i)const{const auto&a=checked(id);if(a.references)throw std::runtime_error("iaload on reference array");if(i<0||static_cast<std::size_t>(i)>=a.ints.size())throw std::runtime_error("Array index out of bounds");return a.ints[static_cast<std::size_t>(i)];}
+void VmArrayHeap::put_int(ObjectId id,std::int32_t i,std::int32_t v){auto&a=checked(id);if(a.references)throw std::runtime_error("iastore on reference array");if(i<0||static_cast<std::size_t>(i)>=a.ints.size())throw std::runtime_error("Array index out of bounds");a.ints[static_cast<std::size_t>(i)]=v;}
+VmValue VmArrayHeap::get_reference(ObjectId id,std::int32_t i)const{const auto&a=checked(id);if(!a.references)throw std::runtime_error("aaload on primitive array");if(i<0||static_cast<std::size_t>(i)>=a.refs.size())throw std::runtime_error("Array index out of bounds");return a.refs[static_cast<std::size_t>(i)];}
+void VmArrayHeap::put_reference(ObjectId id,std::int32_t i,const VmValue&v){auto&a=checked(id);if(!a.references)throw std::runtime_error("aastore on primitive array");if(!v.is_reference()&&!v.is_null())throw std::runtime_error("aastore requires reference or null");if(i<0||static_cast<std::size_t>(i)>=a.refs.size())throw std::runtime_error("Array index out of bounds");a.refs[static_cast<std::size_t>(i)]=v;}
+const std::string& VmArrayHeap::component_class(ObjectId id)const{const auto&a=checked(id);if(!a.references)throw std::runtime_error("Primitive array has no component class");return a.component;}
+}
