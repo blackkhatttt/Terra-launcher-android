@@ -131,6 +131,7 @@ jobs:
             solarcrystal-0.8/native/vm_value.cpp \
             solarcrystal-0.8/native/reference_bytecode_executor.cpp \
             solarcrystal-0.8/native/class_file_model.cpp \
+            solarcrystal-0.8/native/class_file_repository.cpp \
             solarcrystal-0.8/native/class_file_execution_resolver.cpp \
             solarcrystal-0.8/tests/native/class_file_execution_resolver_test.cpp \
             -I solarcrystal-0.8/native \
