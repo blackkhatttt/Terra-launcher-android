@@ -8,7 +8,13 @@
 namespace solarcrystal {
 using NewClassResolver = std::function<std::string(std::uint16_t)>;
 struct SpecialMethod { std::string owner_class; std::string name; std::string descriptor; std::vector<std::uint8_t> code; std::size_t max_locals=1; std::size_t max_stack=1; };
-struct InstanceField { std::string owner_class; std::string name; };
+struct InstanceField {
+ std::string name;
+ std::string descriptor;
+ std::string access_class;
+ std::string declared_name;
+ std::vector<std::string> compatible_runtime_classes;
+};
 using SpecialMethodResolver = std::function<SpecialMethod(std::uint16_t)>;
 using InstanceFieldResolver = std::function<InstanceField(std::uint16_t)>;
 struct ReferenceExecutionResult {
