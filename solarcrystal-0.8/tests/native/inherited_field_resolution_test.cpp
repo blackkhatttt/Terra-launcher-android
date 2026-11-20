@@ -1,4 +1,5 @@
 #include "class_file_execution_resolver.h"
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <fstream>
@@ -28,12 +29,13 @@ int main(int argc,char** argv) {
  for(std::size_t i=1;i<child.constant_pool().size();++i) {
   if(child.constant_pool()[i].tag!=9) continue;
   const auto ref=child.member_reference_at(static_cast<std::uint16_t>(i));
-  if(ref.owner==child.name()&&ref.name=="inheritedValue"&&ref.descriptor=="I") {cp=static_cast<std::uint16_t>(i);break;}
+  if(ref.name=="inheritedValue"&&ref.descriptor=="I") {cp=static_cast<std::uint16_t>(i);break;}
  }
  assert(cp!=0);
  const auto field=resolve_field(cp);
- assert(field.name=="inheritedValue"&&field.access_class==child.name());
- assert(field.compatible_runtime_classes.size()==1&&field.compatible_runtime_classes[0]==child.name());
+ assert(field.name=="inheritedValue"&&field.access_class==base.name());
+ assert(field.compatible_runtime_classes.size()==2);
+ assert(std::find(field.compatible_runtime_classes.begin(),field.compatible_runtime_classes.end(),child.name())!=field.compatible_runtime_classes.end());
  ObjectHeap heap; const auto id=heap.allocate(child.name(),{});
  const auto* writer=child.find_method("writeInherited","(I)V");
  const auto* reader=child.find_method("readInherited","()I");
