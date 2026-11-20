@@ -108,10 +108,10 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/sc086a/classes"
           javac --release 8 -g:none -d "$RUNNER_TEMP/sc086a/classes" solarcrystal-0.8/tests/jar-fixture/SolarCrystalObjectFixture.java
-          g++ -std=c++17 -Wall -Wextra -Werror \\
-            solarcrystal-0.8/native/class_file_model.cpp \\
-            solarcrystal-0.8/tests/native/class_file_model_test.cpp \\
-            -I solarcrystal-0.8/native \\
+          g++ -std=c++17 -Wall -Wextra -Werror \
+            solarcrystal-0.8/native/class_file_model.cpp \
+            solarcrystal-0.8/tests/native/class_file_model_test.cpp \
+            -I solarcrystal-0.8/native \
             -o "$RUNNER_TEMP/sc086a/class_file_model_test"
           "$RUNNER_TEMP/sc086a/class_file_model_test" "$RUNNER_TEMP/sc086a/classes/SolarCrystalObjectFixture.class"
 
