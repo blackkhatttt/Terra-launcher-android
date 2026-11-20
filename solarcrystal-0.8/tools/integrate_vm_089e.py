@@ -3,10 +3,10 @@
 from pathlib import Path
 import base64
 import shutil
-import xml.etree.ElementTree as ET
+import runpy
 
 root = Path.cwd()
-app = root / "terra-android/src/main"
+# Rebuild the complete 0.8.9d UI first; the CI baseline starts from 0.7.\nrunpy.run_path(str(Path(__file__).with_name("integrate_vm_089d.py")))\napp = root / "terra-android/src/main"
 java = app / "java/com/terra/android/MainActivity.java"
 manifest = app / "AndroidManifest.xml"
 assets = Path(__file__).resolve().parent.parent / "assets"
@@ -48,7 +48,7 @@ if 'android:icon="@mipmap/ic_launcher"' not in m:
                   '        android:roundIcon="@mipmap/ic_launcher"')
 manifest.write_text(m, encoding="utf-8")
 
-# Refine the 0.8.9d visual system without changing any launcher actions.
+# Apply the 0.8.9e visual refinements without changing launcher actions.
 text = java.read_text(encoding="utf-8")
 changes = [
     ("cardShape.setColor(panel);",
