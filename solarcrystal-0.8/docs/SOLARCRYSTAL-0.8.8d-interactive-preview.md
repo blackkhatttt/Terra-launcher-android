@@ -12,3 +12,5 @@ Scope:
 - This is camera interaction for the generated graphics test only.
 - It is not Minecraft player movement, world interaction, or a running Minecraft client.
 - No Minecraft classes, assets, chunks, or resources are loaded.
+
+Build verification is defined in `.github/workflows/build-solarcrystal-08.yml`; the Android integration applies 0.8.8d metadata after the legacy baseline integration.
