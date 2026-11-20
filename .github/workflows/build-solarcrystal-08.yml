@@ -150,7 +150,19 @@ jobs:
         run: |
           set -euo pipefail
           cd "$PROJECT_DIR"
-          gradle --no-daemon --stacktrace :terra-android:assembleDebug
+          BUILD_OK=0
+          for attempt in 1 2 3; do
+            echo "Android build attempt $attempt/3"
+            if gradle --no-daemon --refresh-dependencies --stacktrace :terra-android:assembleDebug; then
+              BUILD_OK=1
+              break
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "Gradle dependency/build attempt failed; waiting before retry..."
+              sleep 20
+            fi
+          done
+          test "$BUILD_OK" -eq 1
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
