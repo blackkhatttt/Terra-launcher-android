@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import shutil
+import base64
 
 root = Path.cwd()
 app = root / "terra-android/src/main"
@@ -10,6 +11,9 @@ if not main.is_file():
 
 # Package the supplied original image when it is available in the asset folder.
 icon = Path(__file__).resolve().parent.parent / "assets/ic_launcher.png"
+encoded_icon = Path(__file__).resolve().parent.parent / "assets/ic_launcher.png.b64"
+if encoded_icon.is_file() and not icon.is_file():
+    icon.write_bytes(base64.b64decode(encoded_icon.read_text(encoding="ascii").strip()))
 if icon.is_file():
     res = app / "res"
     out = res / "mipmap-nodpi"
