@@ -17,11 +17,17 @@ std::int32_t mul(std::int32_t a,std::int32_t b){return static_cast<std::int32_t>
 std::int32_t pop_i(VmFrame& f){return f.pop().as_integer();}
 VmValue load_ref(const VmFrame& f,std::size_t i,const ObjectHeap& h){
  const auto& v=f.get_local(i); if(!v.is_reference()&&!v.is_null())throw std::runtime_error("aload requires reference or null");
- if(v.is_reference()&&!h.is_valid(v.as_reference()))throw std::runtime_error("aload invalid reference"); return v;
+ if (v.is_reference() && !h.is_valid(v.as_reference())) {
+  throw std::runtime_error("aload invalid reference");
+ }
+ return v;
 }
 void store_ref(VmFrame& f,std::size_t i,const VmValue& v,const ObjectHeap& h){
  if(!v.is_reference()&&!v.is_null())throw std::runtime_error("astore requires reference or null");
- if(v.is_reference()&&!h.is_valid(v.as_reference()))throw std::runtime_error("astore invalid reference"); f.set_local(i,v);
+ if (v.is_reference() && !h.is_valid(v.as_reference())) {
+  throw std::runtime_error("astore invalid reference");
+ }
+ f.set_local(i, v);
 }
 ObjectId pop_ref(VmFrame& f,const ObjectHeap& h){
  auto v=f.pop(); if(!v.is_reference()||!h.is_valid(v.as_reference()))throw std::runtime_error("Instance operation requires valid non-null reference"); return v.as_reference();
