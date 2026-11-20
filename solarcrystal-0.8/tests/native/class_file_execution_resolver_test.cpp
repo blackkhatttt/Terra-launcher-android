@@ -35,45 +35,47 @@ int main(int argc, char** argv) {
     assert(reader && reader->has_code);
 
     ObjectHeap heap;
-    // Find the actual CONSTANT_Class entry and both constructor Methodrefs
-    // in the parsed class rather than assuming compiler-assigned indexes.
+    // Find the actual CONSTANT_Class and Object.<init> entries in the parsed pool.
     std::uint16_t class_index = 0;
     std::uint16_t object_constructor_index = 0;
-    std::uint16_t fixture_constructor_index = 0;
     for (std::uint32_t i = 1; i < model.constant_pool().size(); ++i) {
         const auto tag = model.constant_pool()[i].tag;
         if (tag == 7 && model.class_name_at(static_cast<std::uint16_t>(i)) == model.name()) {
             class_index = static_cast<std::uint16_t>(i);
         } else if (tag == 10 || tag == 11) {
             const auto ref = model.member_reference_at(static_cast<std::uint16_t>(i));
-            if (ref.name == "<init>" && ref.descriptor == "()V") {
-                if (ref.owner == "java/lang/Object") {
-                    object_constructor_index = static_cast<std::uint16_t>(i);
-                } else if (ref.owner == model.name()) {
-                    fixture_constructor_index = static_cast<std::uint16_t>(i);
-                }
+            if (ref.owner == "java/lang/Object" && ref.name == "<init>" &&
+                ref.descriptor == "()V") {
+                object_constructor_index = static_cast<std::uint16_t>(i);
             }
         }
     }
     assert(class_index != 0);
     assert(object_constructor_index != 0);
-    assert(fixture_constructor_index != 0);
 
-    std::vector<std::uint8_t> code = {
+    // Allocate by resolving the real CONSTANT_Class, then run the parsed
+    // constructor Code attribute directly. Its invokespecial/getfield/putfield
+    // operands are resolved from the class's actual Constant Pool.
+    const std::vector<std::uint8_t> allocation_code = {
         0xbb, static_cast<std::uint8_t>(class_index >> 8),
         static_cast<std::uint8_t>(class_index & 0xff),
         0x59,
-        0xb7, static_cast<std::uint8_t>(fixture_constructor_index >> 8),
-        static_cast<std::uint8_t>(fixture_constructor_index & 0xff),
         0x4b
     };
     VmFrame allocation_frame(2, 4);
     const auto allocated = execute_reference_bytecode(
-        code, allocation_frame, heap, new_class, special, field);
+        allocation_code, allocation_frame, heap, new_class, special, field);
     assert(allocated.objects_allocated == 1);
-    assert(allocated.constructors_invoked == 1);
     const auto object_id = allocation_frame.get_local(0).as_reference();
     assert(heap.class_name(object_id) == model.name());
+
+    VmFrame constructor_frame(constructor->max_locals, constructor->max_stack);
+    constructor_frame.set_local(0, VmValue::reference(object_id));
+    const auto constructed = execute_reference_bytecode(
+        constructor->code, constructor_frame, heap, new_class, special, field);
+    assert(constructed.returned);
+    assert(constructed.constructors_invoked == 1);
+    assert(constructed.fields_written == 1);
     assert(heap.get_int(object_id, model.name(), "value") == 42);
 
     // Execute the real writeValue(int) bytecode using its parsed Code attribute.
