@@ -437,6 +437,8 @@ jobs:
           grep -q "SunsetVoxelDrawable" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
           grep -q "class SunsetVoxelDrawable" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/SunsetVoxelDrawable.java"
           grep -q "0.8.9d" "$PROJECT_DIR/terra-android/build.gradle"
+          test -f "$PROJECT_DIR/terra-android/src/main/res/mipmap-nodpi/ic_launcher.png"
+          grep -q 'android:icon="@mipmap/ic_launcher"' "$PROJECT_DIR/terra-android/src/main/AndroidManifest.xml"
           echo "Universe Launcher 0.8.9d voxel sunset and refreshed interface integrated."
 
       - name: Set up Android SDK
