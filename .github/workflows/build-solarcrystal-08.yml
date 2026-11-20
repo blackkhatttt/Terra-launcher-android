@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.8.9c - JNI bridge
+name: Build Universe Launcher 0.8.9d - Visual refresh
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.8.9c
+    name: Build and verify SolarCrystal 0.8.9d
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -432,6 +432,12 @@ jobs:
           grep -q "Class initializer:" terra-android/src/main/cpp/jni_bridge.cpp
           grep -q "versionName '0.8.9c'" terra-android/build.gradle
           echo "SolarCrystal 0.8.9c JNI static metadata bridge integrated."
+          cp solarcrystal-0.8/src/main/java/com/terra/android/SunsetVoxelDrawable.java "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/"
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_089d.py"
+          grep -q "SunsetVoxelDrawable" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          grep -q "class SunsetVoxelDrawable" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/SunsetVoxelDrawable.java"
+          grep -q "0.8.9d" "$PROJECT_DIR/terra-android/build.gradle"
+          echo "Universe Launcher 0.8.9d voxel sunset and refreshed interface integrated."
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
@@ -470,6 +476,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.8.9c
+          name: Universe-Launcher-SolarCrystal-0.8.9d
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
