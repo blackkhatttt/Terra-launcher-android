@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.8.9b - Static class metadata
+name: Build Universe Launcher 0.8.9c - JNI bridge
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.8.9b
+    name: Build and verify SolarCrystal 0.8.9c
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -426,6 +426,12 @@ jobs:
           grep -q "class_initializer" terra-android/src/main/cpp/class_file_model.cpp
           grep -q "versionName '0.8.9b'" terra-android/build.gradle
           echo "SolarCrystal 0.8.9b static field metadata integrated."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_089c.py"
+          grep -q "nativeInspectStaticMetadata" terra-android/src/main/java/com/universe/solarcrystal/NativeBridge.java
+          grep -q "Java_com_universe_solarcrystal_NativeBridge_nativeInspectStaticMetadata" terra-android/src/main/cpp/jni_bridge.cpp
+          grep -q "Class initializer:" terra-android/src/main/cpp/jni_bridge.cpp
+          grep -q "versionName '0.8.9c'" terra-android/build.gradle
+          echo "SolarCrystal 0.8.9c JNI static metadata bridge integrated."
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
@@ -464,6 +470,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.8.9b
+          name: Universe-Launcher-SolarCrystal-0.8.9c
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
