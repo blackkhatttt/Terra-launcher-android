@@ -263,7 +263,7 @@ jobs:
             "$RUNNER_TEMP/sc087c/classes/SolarCrystalMethodChildFixture.class" \
             "$RUNNER_TEMP/sc087c/classes/SolarCrystalDefaultInterfaceFixture.class"
 
-      - name: Test SolarCrystal multi-class member linkage 0.8.7d
+      - name: Test SolarCrystal multi-class member linkage 0.8.7d (javac-compatible)
         shell: bash
         run: |
           set -euo pipefail
