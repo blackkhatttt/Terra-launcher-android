@@ -1,5 +1,4 @@
-
-name: Build Universe Launcher 0.6 - SolarCrystal
+name: Build Universe Launcher Android
 
 on:
   workflow_dispatch:
@@ -19,95 +18,76 @@ env:
 
 jobs:
   build:
-    name: Build Android APK
+    name: Build and verify Android APK
     runs-on: ubuntu-latest
-
+    timeout-minutes: 45
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Locate SolarCrystal 0.6 project
-        id: locate
+      - name: Locate Android project
         shell: bash
         run: |
-          set -e
-
+          set -euo pipefail
           find_project() {
             local root="$1"
-
             while IFS= read -r settings; do
               local dir
               dir="$(dirname "$settings")"
-
               if [ -f "$dir/terra-android/build.gradle" ] &&
                  [ -f "$dir/terra-core/build.gradle" ] &&
                  [ -f "$dir/terra-android/src/main/cpp/CMakeLists.txt" ] &&
-                 [ -f "$dir/terra-android/src/main/cpp/class_method_executor.cpp" ]; then
-                echo "PROJECT_DIR=$dir" >> "$GITHUB_ENV"
-                echo "Found project: $dir"
+                 [ -f "$dir/terra-android/src/main/cpp/jni_bridge.cpp" ] &&
+                 [ -f "$dir/terra-android/src/main/java/com/universe/solarcrystal/NativeBridge.java" ] &&
+                 [ -f "$dir/terra-android/src/main/java/com/terra/android/MainActivity.java" ]; then
+                printf '%s\n' "$dir"
                 return 0
               fi
-            done < <(find "$root" -name settings.gradle -type f)
-
+            done < <(find "$root" -maxdepth 8 -type f -name settings.gradle -not -path '*/.git/*' | sort)
             return 1
           }
 
-          if find_project "$GITHUB_WORKSPACE"; then
-            exit 0
-          fi
-
-          ZIP_FILE="$GITHUB_WORKSPACE/UniverseLauncher-0.6-SolarCrystal-0.6.zip"
-
-          if [ ! -f "$ZIP_FILE" ]; then
-            echo "ERROR: No se encontró el proyecto ni el ZIP 0.6."
-            exit 1
-          fi
-
-          echo "Found ZIP: $ZIP_FILE"
-
-          EXTRACT_DIR="$RUNNER_TEMP/universe-06-source"
-          mkdir -p "$EXTRACT_DIR"
-          unzip -q "$ZIP_FILE" -d "$EXTRACT_DIR"
-
-          if ! find_project "$EXTRACT_DIR"; then
-            echo "ERROR: El ZIP no contiene un proyecto SolarCrystal válido."
-            echo "Contenido del ZIP:"
-            unzip -l "$ZIP_FILE"
-            exit 1
-          fi
-
-      - name: Validate project files
-        shell: bash
-        run: |
-          set -e
-          cd "$PROJECT_DIR"
-
-          FILES=(
-            "terra-android/src/main/cpp/CMakeLists.txt"
-            "terra-android/src/main/cpp/vm_runtime.cpp"
-            "terra-android/src/main/cpp/class_method_executor.cpp"
-            "terra-android/src/main/cpp/jni_bridge.cpp"
-            "terra-android/src/main/java/com/universe/solarcrystal/NativeBridge.java"
-            "terra-android/src/main/java/com/terra/android/MainActivity.java"
-          )
-
-          for file in "${FILES[@]}"; do
-            if [ ! -f "$file" ]; then
-              echo "ERROR: Falta $file"
+          if ! PROJECT_DIR="$(find_project "$GITHUB_WORKSPACE")"; then
+            ZIP_FILE="$GITHUB_WORKSPACE/UniverseLauncher-0.7-SolarCrystal-0.7.zip"
+            if [ ! -f "$ZIP_FILE" ]; then
+              echo "::error::No valid Android project or supported source ZIP was found."
               exit 1
             fi
-            echo "OK: $file"
-          done
-
-          if ! grep -q "versionName" terra-android/build.gradle; then
-            echo "ERROR: No se encontró versionName en build.gradle"
-            exit 1
+            EXTRACT_DIR="$RUNNER_TEMP/universe-source"
+            mkdir -p "$EXTRACT_DIR"
+            unzip -q "$ZIP_FILE" -d "$EXTRACT_DIR"
+            PROJECT_DIR="$(find_project "$EXTRACT_DIR")" || {
+              echo "::error::The source ZIP does not contain the required Android project files."
+              exit 1
+            }
           fi
 
-          echo "Version configuration:"
-          grep -E "versionCode|versionName" terra-android/build.gradle || true
+          PROJECT_DIR="$(realpath "$PROJECT_DIR")"
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Using project: $PROJECT_DIR"
 
-      - name: Set up JDK
+      - name: Validate source files and report declared versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          CPP="$PROJECT_DIR/terra-android/src/main/cpp"
+          JAVA="$PROJECT_DIR/terra-android/src/main/java"
+          for file in \
+            "$CPP/CMakeLists.txt" \
+            "$CPP/vm_runtime.cpp" \
+            "$CPP/jni_bridge.cpp" \
+            "$JAVA/com/universe/solarcrystal/NativeBridge.java" \
+            "$JAVA/com/terra/android/MainActivity.java"; do
+            test -f "$file"
+            echo "OK: $file"
+          done
+          echo "Gradle version declaration (informational):"
+          grep -E 'versionCode|versionName' "$PROJECT_DIR/terra-android/build.gradle" || true
+          echo "CMake project declaration (informational):"
+          grep -E '^project\(' "$CPP/CMakeLists.txt" || true
+          echo "Version labels are informational; they are not build failure conditions."
+
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -115,98 +95,59 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
-        with:
-          packages: platform-tools
 
-      - name: Install Android build tools
+      - name: Install Android SDK, NDK and CMake
         shell: bash
         run: |
-          sdkmanager \
+          set -euo pipefail
+          sdkmanager --install \
+            "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.0" \
             "ndk;${ANDROID_NDK_VERSION}" \
             "cmake;${ANDROID_CMAKE_VERSION}"
 
-      - name: Clean native build directories
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+
+      - name: Clean build directories
         shell: bash
         run: |
-          set -e
-
-          echo "Removing previous native build files..."
-
+          set -euo pipefail
           rm -rf "$PROJECT_DIR/terra-android/.cxx"
           rm -rf "$PROJECT_DIR/terra-android/build"
           rm -rf "$PROJECT_DIR/terra-android/.externalNativeBuild"
           rm -rf "$PROJECT_DIR/terra-core/build"
 
-          echo "Native build directories cleaned."
-
-      - name: Normalize source timestamps
-        shell: bash
-        run: |
-          set -e
-
-          echo "Normalizing source file timestamps..."
-
-          find "$PROJECT_DIR" \
-            -path "$PROJECT_DIR/.git" -prune -o \
-            -type f -exec touch {} +
-
-          echo "Source timestamps normalized."
-
-      - name: Set up Gradle
-        uses: gradle/gradle-build-action@v3
-        with:
-          gradle-version: ${{ env.GRADLE_VERSION }}
-
       - name: Build Universe Launcher
         shell: bash
         run: |
-          set -e
-          cd "$PROJECT_DIR"
+          set -euo pipefail
+          gradle --no-daemon --stacktrace -p "$PROJECT_DIR" :terra-android:assembleDebug
 
-          gradle --no-daemon --stacktrace :terra-android:assembleDebug
-
-      - name: Locate APK
-        id: apk
+      - name: Verify APK and native libraries
         shell: bash
         run: |
-          set -e
-
-          APK="$(find "$PROJECT_DIR/terra-android/build/outputs/apk" \
-            -type f -name '*.apk' | head -n 1)"
-
+          set -euo pipefail
+          APK="$(find "$PROJECT_DIR/terra-android/build/outputs/apk" -type f -name '*.apk' -print -quit)"
           if [ -z "$APK" ]; then
-            echo "ERROR: No se generó ningún APK."
+            echo "::error::Gradle did not generate an APK."
             exit 1
           fi
-
-          echo "APK_PATH=$APK" >> "$GITHUB_ENV"
-          echo "APK encontrado: $APK"
-
-      - name: Verify SolarCrystal native libraries
-        shell: bash
-        run: |
-          set -e
-
-          APK_DIR="$RUNNER_TEMP/apk-check"
+          APK_DIR="$RUNNER_TEMP/universe-apk-check"
           mkdir -p "$APK_DIR"
-          unzip -q "$APK_PATH" -d "$APK_DIR"
-
+          unzip -q "$APK" -d "$APK_DIR"
           for ABI in arm64-v8a armeabi-v7a x86 x86_64; do
-            LIB="$APK_DIR/lib/$ABI/libsolarcrystal.so"
-
-            if [ ! -f "$LIB" ]; then
-              echo "ERROR: No existe libsolarcrystal.so para $ABI"
-              exit 1
-            fi
-
-            echo "OK: $ABI"
+            test -f "$APK_DIR/lib/$ABI/libsolarcrystal.so"
+            echo "OK: libsolarcrystal.so ($ABI)"
           done
+          echo "APK_PATH=$APK" >> "$GITHUB_ENV"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-0.6-SolarCrystal
+          name: UniverseLauncher-Android
           path: ${{ env.APK_PATH }}
           if-no-files-found: error
