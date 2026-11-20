@@ -50,8 +50,8 @@ replacements = {
     "private final int white = Color.rgb(240, 247, 242);": "private final int white = Color.rgb(246, 249, 255);",
     "private final int muted = Color.rgb(171, 190, 178);": "private final int muted = Color.rgb(206, 214, 235);",
     "scroll.setBackgroundColor(background);": "scroll.setBackground(new SunsetVoxelDrawable());",
-    "LAUNCHER  •  ANDROID EDITION  •  VERSION 0.7": "JAVA EDITION LAUNCHER  •  ANDROID  •  VERSION 0.8.9d",
-    "SOLARCRYSTAL 0.7  •  CLASS LOADING & RESOLUTION": "SOLARCRYSTAL 0.8.9d  •  JAVA RUNTIME DEVELOPMENT",
+    "LAUNCHER  •  ANDROID EDITION  •  VERSION 0.8.9b": "JAVA EDITION LAUNCHER  •  ANDROID  •  VERSION 0.8.9d",
+    "SOLARCRYSTAL 0.8.9b  •  CLASS LOADING & RESOLUTION": "SOLARCRYSTAL 0.8.9d  •  JAVA RUNTIME DEVELOPMENT",
 }
 for old, new in replacements.items():
     if old not in text:
