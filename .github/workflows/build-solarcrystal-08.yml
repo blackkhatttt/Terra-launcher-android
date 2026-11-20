@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.8.7b - Inherited fields compatibility fix
+name: Build Universe Launcher 0.8.7b - Inherited fields validation compatibility fix
 
 on:
   workflow_dispatch:
