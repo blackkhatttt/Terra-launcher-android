@@ -4,7 +4,8 @@ import zipfile
 from pathlib import Path
 import importlib.util
 
-script = Path(__file__).resolve().parents[2] / "tools" / "legacy_client_compare.py"
+root = Path(__file__).resolve().parents[1]
+script = root / "tools" / "legacy_client_compare.py"
 spec = importlib.util.spec_from_file_location("legacy_client_compare", script)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
