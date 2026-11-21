@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.8.9e - Visual refresh
+name: Build Universe Launcher 0.8.9f - Infdev preflight
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.8.9e
+    name: Build and verify SolarCrystal 0.8.9f
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -437,9 +437,26 @@ jobs:
           grep -q "SunsetVoxelDrawable" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
           grep -q "class SunsetVoxelDrawable" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/SunsetVoxelDrawable.java"
           grep -q "0.8.9e" "$PROJECT_DIR/terra-android/build.gradle"
-          test -f "$PROJECT_DIR/terra-android/src/main/res/mipmap-nodpi/ic_launcher.png"
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_089f.py"
+          grep -q "0.8.9f" "$PROJECT_DIR/terra-android/build.gradle"
+          test -f "$PROJECT_DIR/terra-android/src/main/res/mipmap-nodpi/ic_launcher.jpg"
           grep -q 'android:icon="@mipmap/ic_launcher"' "$PROJECT_DIR/terra-android/src/main/AndroidManifest.xml"
-          echo "Universe Launcher 0.8.9e official icon and refined interface integrated."
+          grep -q 'android:roundIcon="@mipmap/ic_launcher"' "$PROJECT_DIR/terra-android/src/main/AndroidManifest.xml"
+          echo "Universe Launcher 0.8.9f original galaxy artwork and adaptive icon integrated."
+
+      - name: Run Infdev JAR preflight and repeat-scan diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          FIXTURE="$GITHUB_WORKSPACE/solarcrystal-0.8/tests/jar-fixture/SolarCrystalJarFixture.java"
+          mkdir -p "$RUNNER_TEMP/infdev-preflight/classes"
+          javac --release 8 -g:none -d "$RUNNER_TEMP/infdev-preflight/classes" "$FIXTURE"
+          jar --create --file "$RUNNER_TEMP/infdev-preflight/fixture.jar" -C "$RUNNER_TEMP/infdev-preflight/classes" .
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/infdev_preflight.py" "$RUNNER_TEMP/infdev-preflight/fixture.jar"
+          for pass in 1 2 3 4 5; do
+            python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/infdev_preflight.py" "$RUNNER_TEMP/infdev-preflight/fixture.jar" >/dev/null
+          done
+          echo "Infdev archive integrity, duplicate-entry, class-header and repeat-scan checks passed."
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
@@ -478,6 +495,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.8.9e
+          name: Universe-Launcher-SolarCrystal-0.8.9f
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
