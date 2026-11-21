@@ -4,13 +4,11 @@ from pathlib import Path
 from zipfile import ZipFile, BadZipFile
 import sys
 import time
-
 if len(sys.argv) != 2:
     raise SystemExit("Usage: infdev_preflight.py <fixture.jar>")
 jar_path = Path(sys.argv[1])
 if not jar_path.is_file():
     raise SystemExit(f"JAR not found: {jar_path}")
-
 started = time.perf_counter()
 try:
     with ZipFile(jar_path) as jar:
@@ -28,7 +26,9 @@ try:
         total_class_bytes = 0
         for info in classes:
             data = jar.read(info)
-            if len(data) < 8 or data[:4] != b"\xca\xfe\xba\xbe":
+            if len(data) < 8 or data[:4].hex() != "cafebabe":
+                actual = data[:4].hex() if len(data) >= 4 else data.hex()
+                raise SystemExit(f"Invalid class-file header: {info.filename} (got {actual})")
                 raise SystemExit(f"Invalid class-file header: {info.filename}")
             minor = int.from_bytes(data[4:6], "big")
             major = int.from_bytes(data[6:8], "big")
@@ -38,7 +38,6 @@ try:
             total_class_bytes += len(data)
 except BadZipFile as exc:
     raise SystemExit(f"Invalid JAR/ZIP archive: {exc}")
-
 elapsed_ms = (time.perf_counter() - started) * 1000.0
 print("SOLARCRYSTAL INFDEV PREFLIGHT: PASS")
 print(f"Archive: {jar_path.name}")
