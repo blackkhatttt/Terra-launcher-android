@@ -523,7 +523,7 @@ jobs:
         with:
           gradle-version: ${{ env.GRADLE_VERSION }}
 
-      - name: Build Android APK
+      # Includes the latest 0.9.0 comparison integration script.\n      - name: Build Android APK
         shell: bash
         run: |
           set -euo pipefail
