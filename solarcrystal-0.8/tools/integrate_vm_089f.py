@@ -19,7 +19,13 @@ if not icon_jpg.is_file():
 # JPEG is a supported Android mipmap resource and preserves the supplied artwork.
 mipmap = app / "res/mipmap-nodpi"
 mipmap.mkdir(parents=True, exist_ok=True)
-# Android treats files with the same resource basename as duplicates even when\n# their extensions differ. Remove stale variants from the 0.7 baseline first.\nfor stale in ("ic_launcher.png", "ic_launcher.webp", "ic_launcher.jpeg"):\n    stale_path = mipmap / stale\n    if stale_path.exists():\n        stale_path.unlink()\nshutil.copyfile(icon_jpg, mipmap / "ic_launcher.jpg")
+# Android treats files with the same resource basename as duplicates even when
+# their extensions differ. Remove stale variants from the 0.7 baseline first.
+for stale in ("ic_launcher.png", "ic_launcher.webp", "ic_launcher.jpeg"):
+    stale_path = mipmap / stale
+    if stale_path.exists():
+        stale_path.unlink()
+shutil.copyfile(icon_jpg, mipmap / "ic_launcher.jpg")
 
 adaptive = app / "res/mipmap-anydpi-v26"
 adaptive.mkdir(parents=True, exist_ok=True)
