@@ -6,10 +6,15 @@
 int main() {
     using namespace solarcrystal;
 
-    assert(core_library_count() == 29);
+    assert(core_library_count() == 41);
     assert(is_core_library_known("java/lang/Object"));
     assert(is_core_library_known("java/lang/String"));
     assert(is_core_library_known("java/util/ArrayList"));
+    assert(is_core_library_known("java/util/List"));
+    assert(is_core_library_known("java/util/Map"));
+    assert(is_core_library_known("java/util/Iterator"));
+    assert(is_core_library_known("java/lang/IllegalArgumentException"));
+    assert(!has_core_host_bridge("java/util/List"));
     assert(is_core_library_known("java/io/InputStream"));
     assert(is_core_library_known("java/net/URL"));
     assert(!is_core_library_known("net/minecraft/client/Minecraft"));
