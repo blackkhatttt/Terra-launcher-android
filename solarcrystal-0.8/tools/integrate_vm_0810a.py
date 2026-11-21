@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Integrate SolarCrystal 0.8.10a core Java library registry and verified icon resources."""
+"""Integrate SolarCrystal 0.8.10a core Java library registry and supplied icon."""
 from pathlib import Path
 import base64
 import re
@@ -10,7 +10,6 @@ repo = Path(__file__).resolve().parent.parent
 app = root / "terra-android/src/main"
 native = repo / "native"
 
-# Native class-library inventory used by dependency analysis and preflight.
 for name in ("core_library_registry.h", "core_library_registry.cpp"):
     source = native / name
     if not source.is_file():
@@ -18,30 +17,28 @@ for name in ("core_library_registry.h", "core_library_registry.cpp"):
     shutil.copy2(source, app / "cpp" / name)
 
 cmake = app / "cpp/CMakeLists.txt"
-text = cmake.read_text(encoding="utf-8")
-if "core_library_registry.cpp" not in text:
-    text = text.replace("add_library(", "add_library(", 1)
-    match = re.search(r"add_library\\s*\\([^\\n]*\\n", text)
+cmake_text = cmake.read_text(encoding="utf-8")
+if "core_library_registry.cpp" not in cmake_text:
+    match = re.search(r"add_library\s*\([^\n]*\n", cmake_text)
     if not match:
         raise SystemExit("Could not locate native add_library source list")
-    text = text[:match.end()] + "    core_library_registry.cpp\\n" + text[match.end():]
-    cmake.write_text(text, encoding="utf-8")
+    cmake_text = cmake_text[:match.end()] + "    core_library_registry.cpp\n" + cmake_text[match.end():]
+    cmake.write_text(cmake_text, encoding="utf-8")
 
 java_source = repo / "src/main/java/com/universe/solarcrystal/JavaLibraryBridge.java"
 java_dest = app / "java/com/universe/solarcrystal/JavaLibraryBridge.java"
 java_dest.parent.mkdir(parents=True, exist_ok=True)
 shutil.copy2(java_source, java_dest)
 
-# Use the exact supplied galaxy-U artwork stored as PNG base64.
 assets = repo / "assets"
 encoded = assets / "ic_launcher.png.b64"
 if not encoded.is_file():
-    raise SystemExit("Missing supplied Universe Launcher icon: assets/ic_launcher.png.b64")
+    raise SystemExit("Missing supplied Universe Launcher PNG asset")
 try:
     icon_bytes = base64.b64decode(encoded.read_text(encoding="ascii").strip(), validate=True)
 except Exception as exc:
     raise SystemExit(f"Invalid icon base64 asset: {exc}")
-if not icon_bytes.startswith(b"\\x89PNG\\r\\n\\x1a\\n"):
+if not icon_bytes.startswith(b"\x89PNG\r\n\x1a\n"):
     raise SystemExit("Universe Launcher icon is not a valid PNG")
 
 mipmap = app / "res/mipmap-nodpi"
@@ -56,16 +53,16 @@ for stale in ("ic_launcher.jpg", "ic_launcher.jpeg", "ic_launcher.webp"):
 (mipmap / "ic_launcher.png").write_bytes(icon_bytes)
 (drawable / "ic_launcher_foreground.png").write_bytes(icon_bytes)
 (adaptive / "ic_launcher.xml").write_text(
-    '<?xml version="1.0" encoding="utf-8"?>\\n'
-    '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\\n'
-    '  <background android:drawable="@color/launcher_icon_background" />\\n'
-    '  <foreground android:drawable="@drawable/ic_launcher_foreground" />\\n'
-    '</adaptive-icon>\\n', encoding="utf-8")
+    '<?xml version="1.0" encoding="utf-8"?>\n'
+    '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
+    '  <background android:drawable="@color/launcher_icon_background" />\n'
+    '  <foreground android:drawable="@drawable/ic_launcher_foreground" />\n'
+    '</adaptive-icon>\n', encoding="utf-8")
 values = app / "res/values"
 values.mkdir(parents=True, exist_ok=True)
 (values / "launcher_colors.xml").write_text(
-    '<?xml version="1.0" encoding="utf-8"?>\\n'
-    '<resources><color name="launcher_icon_background">#080D24</color></resources>\\n',
+    '<?xml version="1.0" encoding="utf-8"?>\n'
+    '<resources><color name="launcher_icon_background">#080D24</color></resources>\n',
     encoding="utf-8")
 
 manifest = app / "AndroidManifest.xml"
@@ -83,7 +80,7 @@ for attribute in ("icon", "roundIcon"):
     if re.search(pattern, head):
         head = re.sub(pattern, replacement, head, count=1)
     else:
-        head += f'\\n        android:{attribute}="@mipmap/ic_launcher"'
+        head += f'\n        android:{attribute}="@mipmap/ic_launcher"'
 manifest_text = manifest_text[:start] + head + manifest_text[end:]
 manifest.write_text(manifest_text, encoding="utf-8")
 
@@ -101,5 +98,5 @@ for i, line in enumerate(lines):
         names += 1
 if codes != 1 or names != 1:
     raise SystemExit("Could not set Android version to 0.8.10a")
-gradle.write_text("\\n".join(lines) + "\\n", encoding="utf-8")
-print("SolarCrystal 0.8.10a core-library registry, host bridge and PNG/adaptive icon integrated.")
+gradle.write_text("\n".join(lines) + "\n", encoding="utf-8")
+print("SolarCrystal 0.8.10a core-library registry and PNG/adaptive icon integrated.")
