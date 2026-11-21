@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.9.1 - legacy JAR preflight
+name: Build Universe Launcher 0.8.10b - core library registry expansion
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.9.1
+    name: Build and verify SolarCrystal 0.8.10b
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -465,15 +465,10 @@ jobs:
           test -s "$PROJECT_DIR/terra-android/src/main/res/drawable-nodpi/ic_launcher_foreground.png"
           file "$PROJECT_DIR/terra-android/src/main/res/mipmap-nodpi/ic_launcher.png" | grep -q "PNG image data"
           echo "Universe Launcher 0.8.10a PNG and adaptive icon resources verified."
-          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_090.py"
-          grep -q "versionName '0.9.0'" "$PROJECT_DIR/terra-android/build.gradle"
-          echo "SolarCrystal 0.9.0 Android package metadata integrated."
-          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_091.py"
-          grep -q "LegacyJarInspector.inspect" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
-          grep -q "LEGACY_JAR_PICKER_091" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
-          grep -q "STATUS: ARCHIVE INSPECTED" "$PROJECT_DIR/terra-android/src/main/java/com/universe/solarcrystal/LegacyJarInspector.java"
-          grep -q "versionName '0.9.1'" "$PROJECT_DIR/terra-android/build.gradle"
-          echo "SolarCrystal 0.9.1 legacy JAR picker and preflight integrated."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_0810b.py"
+          grep -q "versionName '0.8.10b'" "$PROJECT_DIR/terra-android/build.gradle"
+          grep -q "core_library_registry.cpp" "$PROJECT_DIR/terra-android/src/main/cpp/CMakeLists.txt"
+          echo "SolarCrystal 0.8.10b core-library registry expansion integrated."
 
       # 0.8.9f validation gate: archive integrity, CAFEBABE headers and repeat scans.
       - name: Run Infdev JAR preflight and repeat-scan diagnostics
@@ -537,6 +532,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.9.1
+          name: Universe-Launcher-SolarCrystal-0.8.10b
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
