@@ -444,7 +444,8 @@ jobs:
           grep -q 'android:roundIcon="@mipmap/ic_launcher"' "$PROJECT_DIR/terra-android/src/main/AndroidManifest.xml"
           echo "Universe Launcher 0.8.9f original galaxy artwork and adaptive icon integrated."
 
-      # 0.8.9f validation gate: archive integrity, CAFEBABE headers and repeat scans.\n      - name: Run Infdev JAR preflight and repeat-scan diagnostics
+      # 0.8.9f validation gate: archive integrity, CAFEBABE headers and repeat scans.
+      - name: Run Infdev JAR preflight and repeat-scan diagnostics
         shell: bash
         run: |
           set -euo pipefail
