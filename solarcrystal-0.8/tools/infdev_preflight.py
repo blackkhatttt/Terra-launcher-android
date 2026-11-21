@@ -28,7 +28,7 @@ try:
         total_class_bytes = 0
         for info in classes:
             data = jar.read(info)
-            if len(data) < 8 or data[:4] != b"\\xca\\xfe\\xba\\xbe":
+            if len(data) < 8 or data[:4] != b"\xca\xfe\xba\xbe":
                 raise SystemExit(f"Invalid class-file header: {info.filename}")
             minor = int.from_bytes(data[4:6], "big")
             major = int.from_bytes(data[6:8], "big")
