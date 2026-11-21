@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.8.9f - Infdev preflight
+name: Build Universe Launcher 0.8.10a - Java core libraries and icon verification
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.8.9f
+    name: Build and verify SolarCrystal 0.8.10a
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -141,6 +141,18 @@ jobs:
             -I solarcrystal-0.8/native \
             -o "$RUNNER_TEMP/sc088a/vm_array_heap_test"
           "$RUNNER_TEMP/sc088a/vm_array_heap_test"
+
+      - name: Test SolarCrystal core Java library registry 0.8.10a
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/sc0810a"
+          g++ -std=c++17 -Wall -Wextra -Werror \
+            solarcrystal-0.8/native/core_library_registry.cpp \
+            solarcrystal-0.8/tests/native/core_library_registry_test.cpp \
+            -I solarcrystal-0.8/native \
+            -o "$RUNNER_TEMP/sc0810a/core_library_registry_test"
+          "$RUNNER_TEMP/sc0810a/core_library_registry_test"
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -442,7 +454,17 @@ jobs:
           test -f "$PROJECT_DIR/terra-android/src/main/res/mipmap-nodpi/ic_launcher.jpg"
           grep -q 'android:icon="@mipmap/ic_launcher"' "$PROJECT_DIR/terra-android/src/main/AndroidManifest.xml"
           grep -q 'android:roundIcon="@mipmap/ic_launcher"' "$PROJECT_DIR/terra-android/src/main/AndroidManifest.xml"
-          echo "Universe Launcher 0.8.9f original galaxy artwork and adaptive icon integrated."
+          echo "Universe Launcher 0.8.9f baseline icon resources integrated."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_0810a.py"
+          grep -q "core_library_registry.cpp" "$PROJECT_DIR/terra-android/src/main/cpp/CMakeLists.txt"
+          grep -q "JavaLibraryBridge" "$PROJECT_DIR/terra-android/src/main/java/com/universe/solarcrystal/JavaLibraryBridge.java"
+          grep -q 'android:icon="@mipmap/ic_launcher"' "$PROJECT_DIR/terra-android/src/main/AndroidManifest.xml"
+          grep -q 'android:roundIcon="@mipmap/ic_launcher"' "$PROJECT_DIR/terra-android/src/main/AndroidManifest.xml"
+          test -s "$PROJECT_DIR/terra-android/src/main/res/mipmap-nodpi/ic_launcher.png"
+          test -s "$PROJECT_DIR/terra-android/src/main/res/mipmap-anydpi-v26/ic_launcher.xml"
+          test -s "$PROJECT_DIR/terra-android/src/main/res/drawable-nodpi/ic_launcher_foreground.png"
+          file "$PROJECT_DIR/terra-android/src/main/res/mipmap-nodpi/ic_launcher.png" | grep -q "PNG image data"
+          echo "Universe Launcher 0.8.10a PNG and adaptive icon resources verified."
 
       # 0.8.9f validation gate: archive integrity, CAFEBABE headers and repeat scans.
       - name: Run Infdev JAR preflight and repeat-scan diagnostics
@@ -496,6 +518,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.8.9f
+          name: Universe-Launcher-SolarCrystal-0.8.10a
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
