@@ -18,12 +18,12 @@ dest.parent.mkdir(parents=True, exist_ok=True)
 dest.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
 text = main.read_text(encoding="utf-8")
 if "import com.universe.solarcrystal.LegacyJarComparison;" not in text:
-    anchor = "import com.universe.solarcrystal.LegacyJarInspector;\\n"
+    anchor = "import com.universe.solarcrystal.LegacyJarInspector;\n"
     if anchor not in text:
         raise SystemExit("Could not find the legacy inspector import")
     text = text.replace(
         anchor,
-        anchor + "import com.universe.solarcrystal.LegacyJarComparison;\\n",
+        anchor + "import com.universe.solarcrystal.LegacyJarComparison;\n",
         1
     )
 
