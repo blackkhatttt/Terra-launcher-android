@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.8.10c - legacy JAR inspection
+name: Build Universe Launcher 0.9.0 - legacy client comparison
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.8.10c
+    name: Build and verify SolarCrystal 0.9.0
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -475,6 +475,13 @@ jobs:
           grep -q "LegacyJarInspector.inspect" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
           grep -q "STATUS: ARCHIVE INSPECTED" "$PROJECT_DIR/terra-android/src/main/java/com/universe/solarcrystal/LegacyJarInspector.java"
           echo "SolarCrystal 0.8.10c legacy JAR picker and static preflight integrated."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_090.py"
+          grep -q "versionCode 21" "$PROJECT_DIR/terra-android/build.gradle"
+          grep -q "versionName '0.9.0'" "$PROJECT_DIR/terra-android/build.gradle"
+          grep -q "LEGACY_JAR_COMPARE_090" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          grep -q "LegacyJarComparison.compare" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          grep -q "class LegacyJarComparison" "$PROJECT_DIR/terra-android/src/main/java/com/universe/solarcrystal/LegacyJarComparison.java"
+          echo "SolarCrystal 0.9.0 in-app two-client comparison integrated."
 
       # 0.8.9f validation gate: archive integrity, CAFEBABE headers and repeat scans.
       - name: Run Infdev JAR preflight and repeat-scan diagnostics
@@ -538,6 +545,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.8.10c
+          name: Universe-Launcher-SolarCrystal-0.9.0
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
