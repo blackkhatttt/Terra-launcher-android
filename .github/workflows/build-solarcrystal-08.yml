@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.9.0 - legacy client launch preparation
+name: Build Universe Launcher 0.9.1 - legacy JAR preflight
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.9.0
+    name: Build and verify SolarCrystal 0.9.1
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
