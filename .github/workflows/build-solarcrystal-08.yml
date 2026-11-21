@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.9.0 - legacy client comparison
+name: Build Universe Launcher 0.9.2 - RubyDung API inventory
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.9.0
+    name: Build and verify SolarCrystal 0.9.2
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -490,6 +490,13 @@ jobs:
           grep -q "versionName '0.9.1'" "$PROJECT_DIR/terra-android/build.gradle"
           grep -q "class RubyDungPreflight" "$PROJECT_DIR/terra-android/src/main/java/com/universe/solarcrystal/RubyDungPreflight.java"
           echo "SolarCrystal 0.9.1 RubyDung-specific preflight integrated."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_rubydung_092.py"
+          grep -q "RUBYDUNG_API_INVENTORY_092" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          grep -q "RubyDungApiInventory.inspect" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          grep -q "versionCode 23" "$PROJECT_DIR/terra-android/build.gradle"
+          grep -q "versionName '0.9.2'" "$PROJECT_DIR/terra-android/build.gradle"
+          grep -q "class RubyDungApiInventory" "$PROJECT_DIR/terra-android/src/main/java/com/universe/solarcrystal/RubyDungApiInventory.java"
+          echo "SolarCrystal 0.9.2 RubyDung API inventory integrated."
 
       # 0.8.9f validation gate: archive integrity, CAFEBABE headers and repeat scans.
       - name: Run Infdev JAR preflight and repeat-scan diagnostics
@@ -516,8 +523,9 @@ jobs:
           python3 -m py_compile "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/legacy_client_compare.py"
           echo "Legacy client analyzer and synthetic JAR test passed."
           python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tests/rubydung_preflight_test.py"
-          python3 -m py_compile "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_rubydung_091.py"
-          echo "RubyDung preflight regression checks passed."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tests/rubydung_api_inventory_test.py"
+          python3 -m py_compile "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_rubydung_091.py" "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_rubydung_092.py"
+          echo "RubyDung preflight and API inventory regression checks passed."
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
@@ -557,6 +565,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.9.1
+          name: Universe-Launcher-SolarCrystal-0.9.2
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
