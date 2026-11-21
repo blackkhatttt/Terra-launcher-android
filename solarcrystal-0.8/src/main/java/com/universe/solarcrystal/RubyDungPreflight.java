@@ -40,6 +40,7 @@ public final class RubyDungPreflight {
 
         int classes = 0;
         int resources = 0;
+        int entriesSeen = 0;
         int highestMajor = -1;
         boolean entryClass = false;
         boolean terrain = false;
@@ -53,7 +54,7 @@ public final class RubyDungPreflight {
             Enumeration<? extends ZipEntry> entries = zip.entries();
             while (entries.hasMoreElements()) {
                 ZipEntry item = entries.nextElement();
-                if (++classes + resources > MAX_ENTRIES) {
+                if (++entriesSeen > MAX_ENTRIES) {
                     throw new IllegalArgumentException("Archive contains too many entries (limit 16384).");
                 }
                 if (item.isDirectory()) continue;
