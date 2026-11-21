@@ -483,6 +483,14 @@ jobs:
           grep -q "class LegacyJarComparison" "$PROJECT_DIR/terra-android/src/main/java/com/universe/solarcrystal/LegacyJarComparison.java"
           echo "SolarCrystal 0.9.0 in-app two-client comparison integrated."
 
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_rubydung_091.py"
+          grep -q "RUBYDUNG_PREFLIGHT_091" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          grep -q "RubyDungPreflight.inspect" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          grep -q "versionCode 22" "$PROJECT_DIR/terra-android/build.gradle"
+          grep -q "versionName '0.9.1'" "$PROJECT_DIR/terra-android/build.gradle"
+          grep -q "class RubyDungPreflight" "$PROJECT_DIR/terra-android/src/main/java/com/universe/solarcrystal/RubyDungPreflight.java"
+          echo "SolarCrystal 0.9.1 RubyDung-specific preflight integrated."
+
       # 0.8.9f validation gate: archive integrity, CAFEBABE headers and repeat scans.
       - name: Run Infdev JAR preflight and repeat-scan diagnostics
         shell: bash
@@ -507,6 +515,9 @@ jobs:
           mkdir -p "$RUNNER_TEMP/legacy-client"
           python3 -m py_compile "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/legacy_client_compare.py"
           echo "Legacy client analyzer and synthetic JAR test passed."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tests/rubydung_preflight_test.py"
+          python3 -m py_compile "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_rubydung_091.py"
+          echo "RubyDung preflight regression checks passed."
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
