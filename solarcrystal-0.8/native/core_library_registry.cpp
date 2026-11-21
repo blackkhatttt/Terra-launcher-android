@@ -5,7 +5,7 @@
 
 namespace solarcrystal {
 namespace {
-constexpr std::array<CoreLibraryEntry, 29> kLibraries{{
+constexpr std::array<CoreLibraryEntry, 41> kLibraries{{
     {"java/lang/Object", CoreLibraryGroup::LANGUAGE, true, true},
     {"java/lang/String", CoreLibraryGroup::LANGUAGE, true, true},
     {"java/lang/StringBuilder", CoreLibraryGroup::LANGUAGE, true, true},
@@ -34,7 +34,19 @@ constexpr std::array<CoreLibraryEntry, 29> kLibraries{{
     {"java/net/URL", CoreLibraryGroup::NETWORK, false, true},
     {"java/lang/Runnable", CoreLibraryGroup::THREADING, false, true},
     {"java/lang/Thread", CoreLibraryGroup::THREADING, false, true},
-    {"java/nio/ByteBuffer", CoreLibraryGroup::IO, false, false}
+    {"java/nio/ByteBuffer", CoreLibraryGroup::IO, false, false},
+    {"java/lang/Number", CoreLibraryGroup::LANGUAGE, false, true},
+    {"java/lang/Enum", CoreLibraryGroup::LANGUAGE, false, true},
+    {"java/lang/IllegalArgumentException", CoreLibraryGroup::LANGUAGE, false, true},
+    {"java/lang/IndexOutOfBoundsException", CoreLibraryGroup::LANGUAGE, false, true},
+    {"java/lang/UnsupportedOperationException", CoreLibraryGroup::LANGUAGE, false, true},
+    {"java/util/Collection", CoreLibraryGroup::COLLECTIONS, false, true},
+    {"java/util/List", CoreLibraryGroup::COLLECTIONS, false, true},
+    {"java/util/Map", CoreLibraryGroup::COLLECTIONS, false, true},
+    {"java/util/Set", CoreLibraryGroup::COLLECTIONS, false, true},
+    {"java/util/Iterator", CoreLibraryGroup::COLLECTIONS, false, true},
+    {"java/util/Comparator", CoreLibraryGroup::COLLECTIONS, false, true},
+    {"java/util/UUID", CoreLibraryGroup::COLLECTIONS, false, false}
 }};
 }
 
