@@ -468,6 +468,12 @@ jobs:
           python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_090.py"
           grep -q "versionName '0.9.0'" "$PROJECT_DIR/terra-android/build.gradle"
           echo "SolarCrystal 0.9.0 Android package metadata integrated."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_091.py"
+          grep -q "LegacyJarInspector.inspect" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          grep -q "LEGACY_JAR_PICKER_091" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          grep -q "STATUS: ARCHIVE INSPECTED" "$PROJECT_DIR/terra-android/src/main/java/com/universe/solarcrystal/LegacyJarInspector.java"
+          grep -q "versionName '0.9.1'" "$PROJECT_DIR/terra-android/build.gradle"
+          echo "SolarCrystal 0.9.1 legacy JAR picker and preflight integrated."
 
       # 0.8.9f validation gate: archive integrity, CAFEBABE headers and repeat scans.
       - name: Run Infdev JAR preflight and repeat-scan diagnostics
@@ -531,6 +537,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.9.0
+          name: Universe-Launcher-SolarCrystal-0.9.1
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
