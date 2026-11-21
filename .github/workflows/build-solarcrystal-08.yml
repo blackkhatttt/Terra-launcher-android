@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.8.10b - core library registry expansion
+name: Build Universe Launcher 0.8.10c - legacy JAR inspection
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.8.10b
+    name: Build and verify SolarCrystal 0.8.10c
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -469,6 +469,12 @@ jobs:
           grep -q "versionName '0.8.10b'" "$PROJECT_DIR/terra-android/build.gradle"
           grep -q "core_library_registry.cpp" "$PROJECT_DIR/terra-android/src/main/cpp/CMakeLists.txt"
           echo "SolarCrystal 0.8.10b core-library registry expansion integrated."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_0810c.py"
+          grep -q "versionName '0.8.10c'" "$PROJECT_DIR/terra-android/build.gradle"
+          grep -q "LEGACY_JAR_PICKER_0810C" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          grep -q "LegacyJarInspector.inspect" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          grep -q "STATUS: ARCHIVE INSPECTED" "$PROJECT_DIR/terra-android/src/main/java/com/universe/solarcrystal/LegacyJarInspector.java"
+          echo "SolarCrystal 0.8.10c legacy JAR picker and static preflight integrated."
 
       # 0.8.9f validation gate: archive integrity, CAFEBABE headers and repeat scans.
       - name: Run Infdev JAR preflight and repeat-scan diagnostics
@@ -532,6 +538,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.8.10b
+          name: Universe-Launcher-SolarCrystal-0.8.10c
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
