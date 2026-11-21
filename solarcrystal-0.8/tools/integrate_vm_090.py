@@ -17,6 +17,15 @@ if not source.is_file():
 dest.parent.mkdir(parents=True, exist_ok=True)
 dest.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
 text = main.read_text(encoding="utf-8")
+if "import com.universe.solarcrystal.LegacyJarComparison;" not in text:
+    anchor = "import com.universe.solarcrystal.LegacyJarInspector;\\n"
+    if anchor not in text:
+        raise SystemExit("Could not find the legacy inspector import")
+    text = text.replace(
+        anchor,
+        anchor + "import com.universe.solarcrystal.LegacyJarComparison;\\n",
+        1
+    )
 
 if "LEGACY_JAR_PICKER_0810C" not in text or "LegacyJarInspector.inspect" not in text:
     raise SystemExit("The 0.8.10c legacy JAR inspector must be integrated first")
