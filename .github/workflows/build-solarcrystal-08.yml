@@ -612,3 +612,5 @@ jobs:
           name: Universe-Launcher-SolarCrystal-0.9.6
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+# 0.9.6 escaped Java diagnostic fix
