@@ -13,9 +13,9 @@ dest.parent.mkdir(parents=True, exist_ok=True)
 dest.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
 text = main.read_text(encoding="utf-8")
 
-imp = "import com.universe.solarcrystal.RubyDungVoxelMesher;\\n"
+imp = "import com.universe.solarcrystal.RubyDungVoxelMesher;\n"
 if "import com.universe.solarcrystal.RubyDungVoxelMesher;" not in text:
-    anchor = "import com.universe.solarcrystal.RubyDungBlockWorld;\\n"
+    anchor = "import com.universe.solarcrystal.RubyDungBlockWorld;\n"
     if anchor not in text:
         raise SystemExit("0.9.8 block world import missing")
     text = text.replace(anchor, anchor + imp, 1)
@@ -60,5 +60,5 @@ if codes < 1 or names < 1:
         f"Could not set Android version 0.9.9 "
         f"(versionCode declarations: {codes}, versionName declarations: {names})"
     )
-gradle.write_text("\\n".join(lines) + "\\n", encoding="utf-8")
+gradle.write_text("\n".join(lines) + "\n", encoding="utf-8")
 print("SolarCrystal 0.9.9 voxel mesher integrated.")
