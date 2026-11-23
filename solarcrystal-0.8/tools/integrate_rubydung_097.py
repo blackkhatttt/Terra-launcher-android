@@ -32,7 +32,7 @@ if "RUBYDUNG_PICKING_SCENE_097" not in text:
         pickingSceneTest.setOnClickListener(v -> showResult(
             "SolarCrystal 0.9.7 • Object Picking Scene",
             RubyDungPickingScene.selfTest()
-                + "\n\nThis is an independent selection-layer test; it is not wired into RubyDung's renderer or world."
+                + "\\n\\nThis is an independent selection-layer test; it is not wired into RubyDung's renderer or world."
         ));
 
 """
