@@ -13,9 +13,9 @@ dest.parent.mkdir(parents=True, exist_ok=True)
 dest.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
 text = main.read_text(encoding="utf-8")
 
-imp = "import com.universe.solarcrystal.RubyDungRayPicker;\\n"
+imp = "import com.universe.solarcrystal.RubyDungRayPicker;\n"
 if "import com.universe.solarcrystal.RubyDungRayPicker;" not in text:
-    anchor = "import com.universe.solarcrystal.RubyDungLegacyGLAudit;\\n"
+    anchor = "import com.universe.solarcrystal.RubyDungLegacyGLAudit;\n"
     if anchor not in text:
         raise SystemExit("0.9.5 legacy GL audit import missing")
     text = text.replace(anchor, anchor + imp, 1)
@@ -32,7 +32,7 @@ if "RUBYDUNG_RAY_PICKER_096" not in text:
         rayPickerTest.setOnClickListener(v -> showResult(
             "SolarCrystal 0.9.6 • CPU Ray Picker",
             RubyDungRayPicker.selfTest()
-                + "\\n\\nThis is a standalone math diagnostic. It is not yet connected to RubyDung's renderer."
+                + "\n\nThis is a standalone math diagnostic. It is not yet connected to RubyDung's renderer."
         ));
 
 """
@@ -57,5 +57,5 @@ for i, line in enumerate(lines):
         names += 1
 if codes != 1 or names != 1:
     raise SystemExit("Could not set Android version 0.9.6")
-gradle.write_text("\\n".join(lines) + "\\n", encoding="utf-8")
+gradle.write_text("\n".join(lines) + "\n", encoding="utf-8")
 print("SolarCrystal 0.9.6 CPU ray picker integrated.")
