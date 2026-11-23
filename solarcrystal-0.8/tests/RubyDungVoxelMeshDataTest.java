@@ -1,5 +1,6 @@
 import com.universe.solarcrystal.RubyDungBlockWorld;
 import com.universe.solarcrystal.RubyDungVoxelMeshData;
+import com.universe.solarcrystal.RubyDungVoxelBlockWorldFactory;
 import com.universe.solarcrystal.RubyDungVoxelMesher;
 
 public final class RubyDungVoxelMeshDataTest {
@@ -31,6 +32,9 @@ public final class RubyDungVoxelMeshDataTest {
         } catch (IllegalArgumentException expected) {
             // Expected validation.
         }
+        String terrain = RubyDungVoxelBlockWorldFactory.selfTest();
+        if (!terrain.startsWith("PASS:")) throw new AssertionError(terrain);
+        System.out.println(terrain);
         System.out.println("PASS: adjacent blocks, index conversion, defensive arrays and null validation.");
     }
 }
