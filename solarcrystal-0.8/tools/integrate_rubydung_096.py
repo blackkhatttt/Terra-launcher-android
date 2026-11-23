@@ -32,7 +32,7 @@ if "RUBYDUNG_RAY_PICKER_096" not in text:
         rayPickerTest.setOnClickListener(v -> showResult(
             "SolarCrystal 0.9.6 • CPU Ray Picker",
             RubyDungRayPicker.selfTest()
-                + "\n\nThis is a standalone math diagnostic. It is not yet connected to RubyDung's renderer."
+                + "\\n\\nThis is a standalone math diagnostic. It is not yet connected to RubyDung's renderer."
         ));
 
 """
