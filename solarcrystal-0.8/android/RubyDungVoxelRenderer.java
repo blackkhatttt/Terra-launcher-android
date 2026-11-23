@@ -6,6 +6,7 @@ import android.opengl.Matrix;
 import com.universe.solarcrystal.RubyDungBlockWorld;
 import com.universe.solarcrystal.RubyDungVoxelMeshData;
 import com.universe.solarcrystal.RubyDungVoxelMesher;
+import com.universe.solarcrystal.RubyDungVoxelBlockWorldFactory;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
