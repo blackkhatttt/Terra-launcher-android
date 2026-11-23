@@ -1,4 +1,5 @@
 name: Build Universe Launcher 0.9.8 - Voxel Block World
+# Keep Java string escapes intact in the 0.9.8 Android integration.
 # Retry after making legacy Gradle version normalization tolerant of multiple declarations.
 
 on:
