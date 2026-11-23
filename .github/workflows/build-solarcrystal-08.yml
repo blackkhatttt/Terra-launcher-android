@@ -583,9 +583,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/picking-scene/classes"
-          javac --release 8 -Xlint:all -Werror -d "$RUNNER_TEMP/picking-scene/classes" \\
-            solarcrystal-0.8/src/main/java/com/universe/solarcrystal/RubyDungRayPicker.java \\
-            solarcrystal-0.8/src/main/java/com/universe/solarcrystal/RubyDungPickingScene.java \\
+          javac --release 8 -Xlint:all -Werror -d "$RUNNER_TEMP/picking-scene/classes" \
+            solarcrystal-0.8/src/main/java/com/universe/solarcrystal/RubyDungRayPicker.java \
+            solarcrystal-0.8/src/main/java/com/universe/solarcrystal/RubyDungPickingScene.java \
             solarcrystal-0.8/tests/RubyDungPickingSceneTest.java
           java -cp "$RUNNER_TEMP/picking-scene/classes" RubyDungPickingSceneTest
 
