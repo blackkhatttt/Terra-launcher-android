@@ -32,7 +32,7 @@ if "RUBYDUNG_BLOCK_WORLD_098" not in text:
         blockWorldTest.setOnClickListener(v -> showResult(
             "SolarCrystal 0.9.8 • Voxel Block World",
             RubyDungBlockWorld.selfTest()
-                + "\n\nThis is a standalone voxel data and picking model; it is not connected to RubyDung's renderer or game loop."
+                + "\\n\\nThis is a standalone voxel data and picking model; it is not connected to RubyDung's renderer or game loop."
         ));
 
 """
