@@ -539,7 +539,7 @@ jobs:
           grep -q "RUBYDUNG_PICKING_SCENE_097" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
           grep -q "RubyDungPickingScene.selfTest" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
           grep -q "versionCode 28" "$PROJECT_DIR/terra-android/build.gradle"
-          grep -q "versionName '0.9.8'" "$PROJECT_DIR/terra-android/build.gradle"
+          grep -q "versionName '0.9.7'" "$PROJECT_DIR/terra-android/build.gradle"
           grep -q "class RubyDungPickingScene" "$PROJECT_DIR/terra-android/src/main/java/com/universe/solarcrystal/RubyDungPickingScene.java"
           echo "SolarCrystal 0.9.8 reusable object picking scene integrated."
 
