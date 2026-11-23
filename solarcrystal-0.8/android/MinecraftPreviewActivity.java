@@ -13,7 +13,7 @@ import android.opengl.GLSurfaceView;
 
 public final class MinecraftPreviewActivity extends Activity {
     private GLSurfaceView surface;
-    private MinecraftPreviewRenderer renderer;
+    private RubyDungVoxelRenderer renderer;
     private float lastX, lastY, lastPinchDistance;
     private float cameraYaw = 38f, cameraPitch = 28f;
     private boolean dragging;
@@ -42,7 +42,7 @@ public final class MinecraftPreviewActivity extends Activity {
         root.addView(surface, new FrameLayout.LayoutParams(-1, -1));
 
         TextView title = new TextView(this);
-        title.setText("UNIVERSE LAUNCHER  •  INTERACTIVE GRAPHICS TEST");
+        title.setText("UNIVERSE LAUNCHER  •  OPENGL ES VOXEL MESH TEST");
         title.setTextColor(Color.WHITE);
         title.setTextSize(12);
         title.setPadding(16, 10, 16, 10);
@@ -50,7 +50,7 @@ public final class MinecraftPreviewActivity extends Activity {
         root.addView(title, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP));
 
         TextView footer = new TextView(this);
-        footer.setText("SOLARCRYSTAL 0.8.8d  |  DRAG TO ROTATE  •  PINCH TO ZOOM");
+        footer.setText("SOLARCRYSTAL 0.9.10  |  DRAG TO ROTATE  •  PINCH TO ZOOM");
         footer.setTextColor(Color.WHITE);
         footer.setTextSize(10);
         footer.setPadding(12, 8, 12, 8);
