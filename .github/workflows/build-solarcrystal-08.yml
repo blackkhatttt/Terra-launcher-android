@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.9.5 - Legacy OpenGL audit
+name: Build Universe Launcher 0.9.6 - CPU Ray Picker
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.9.5
+    name: Build and verify SolarCrystal 0.9.6
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -520,6 +520,13 @@ jobs:
           grep -q "versionName '0.9.5'" "$PROJECT_DIR/terra-android/build.gradle"
           grep -q "class RubyDungLegacyGLAudit" "$PROJECT_DIR/terra-android/src/main/java/com/universe/solarcrystal/RubyDungLegacyGLAudit.java"
           echo "SolarCrystal 0.9.5 legacy OpenGL feature audit integrated."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_rubydung_096.py"
+          grep -q "RUBYDUNG_RAY_PICKER_096" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          grep -q "RubyDungRayPicker.selfTest" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MainActivity.java"
+          grep -q "versionCode 27" "$PROJECT_DIR/terra-android/build.gradle"
+          grep -q "versionName '0.9.6'" "$PROJECT_DIR/terra-android/build.gradle"
+          grep -q "class RubyDungRayPicker" "$PROJECT_DIR/terra-android/src/main/java/com/universe/solarcrystal/RubyDungRayPicker.java"
+          echo "SolarCrystal 0.9.6 CPU ray picker integrated."
 
       # 0.8.9f validation gate: archive integrity, CAFEBABE headers and repeat scans.
       - name: Run Infdev JAR preflight and repeat-scan diagnostics
@@ -551,7 +558,18 @@ jobs:
           python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tests/rubydung_compatibility_plan_test.py"
           python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tests/rubydung_legacy_gl_audit_test.py"
           python3 -m py_compile "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_rubydung_091.py" "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_rubydung_092.py" "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_rubydung_093.py"
+          python3 -m py_compile "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_rubydung_096.py"
           echo "RubyDung preflight, API inventory and bytecode invocation regression checks passed."
+
+      - name: Test CPU ray picker 0.9.6
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ray-picker/classes"
+          javac --release 8 -Xlint:all -Werror -d "$RUNNER_TEMP/ray-picker/classes" \
+            solarcrystal-0.8/src/main/java/com/universe/solarcrystal/RubyDungRayPicker.java \
+            solarcrystal-0.8/tests/RubyDungRayPickerTest.java
+          java -cp "$RUNNER_TEMP/ray-picker/classes" RubyDungRayPickerTest
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
@@ -568,7 +586,7 @@ jobs:
         with:
           gradle-version: ${{ env.GRADLE_VERSION }}
 
-      # Includes the latest RubyDung legacy OpenGL feature audit.
+      # Includes the CPU ray picker module.
       - name: Build Android APK
         shell: bash
         run: |
@@ -591,6 +609,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.9.5
+          name: Universe-Launcher-SolarCrystal-0.9.6
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
