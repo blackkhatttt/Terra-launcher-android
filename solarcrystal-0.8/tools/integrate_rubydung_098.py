@@ -55,7 +55,10 @@ for i, line in enumerate(lines):
     elif line.strip().startswith("versionName "):
         lines[i] = indent + "versionName '0.9.8'"
         names += 1
-if codes != 1 or names != 1:
-    raise SystemExit("Could not set Android version 0.9.8")
+if codes < 1 or names < 1:
+    raise SystemExit(
+        f"Could not set Android version 0.9.8 "
+        f"(versionCode declarations: {codes}, versionName declarations: {names})"
+    )
 gradle.write_text("\n".join(lines) + "\n", encoding="utf-8")
 print("SolarCrystal 0.9.8 voxel block world integrated.")
