@@ -1,4 +1,5 @@
-name: Build Universe Launcher 0.9.8 - Object Picking Scene
+name: Build Universe Launcher 0.9.8 - Voxel Block World
+# Retry after making legacy Gradle version normalization tolerant of multiple declarations.
 
 on:
   workflow_dispatch:
