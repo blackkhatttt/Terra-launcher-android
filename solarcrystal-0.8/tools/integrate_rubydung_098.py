@@ -13,9 +13,9 @@ dest.parent.mkdir(parents=True, exist_ok=True)
 dest.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
 text = main.read_text(encoding="utf-8")
 
-imp = "import com.universe.solarcrystal.RubyDungBlockWorld;\\n"
+imp = "import com.universe.solarcrystal.RubyDungBlockWorld;\n"
 if "import com.universe.solarcrystal.RubyDungBlockWorld;" not in text:
-    anchor = "import com.universe.solarcrystal.RubyDungPickingScene;\\n"
+    anchor = "import com.universe.solarcrystal.RubyDungPickingScene;\n"
     if anchor not in text:
         raise SystemExit("0.9.7 picking scene import missing")
     text = text.replace(anchor, anchor + imp, 1)
@@ -32,7 +32,7 @@ if "RUBYDUNG_BLOCK_WORLD_098" not in text:
         blockWorldTest.setOnClickListener(v -> showResult(
             "SolarCrystal 0.9.8 • Voxel Block World",
             RubyDungBlockWorld.selfTest()
-                + "\\n\\nThis is a standalone voxel data and picking model; it is not connected to RubyDung's renderer or game loop."
+                + "\n\nThis is a standalone voxel data and picking model; it is not connected to RubyDung's renderer or game loop."
         ));
 
 """
@@ -57,5 +57,5 @@ for i, line in enumerate(lines):
         names += 1
 if codes != 1 or names != 1:
     raise SystemExit("Could not set Android version 0.9.8")
-gradle.write_text("\\n".join(lines) + "\\n", encoding="utf-8")
+gradle.write_text("\n".join(lines) + "\n", encoding="utf-8")
 print("SolarCrystal 0.9.8 voxel block world integrated.")
