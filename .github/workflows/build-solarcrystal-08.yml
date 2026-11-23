@@ -392,9 +392,16 @@ jobs:
               elif stripped.startswith("versionName "):
                   gradle_lines[index] = indent + "versionName '0.8.8a'"
                   name_count += 1
-          if code_count != 1 or name_count != 1:
-              raise SystemExit("Could not update Android versionCode/versionName")
+          if code_count < 1 or name_count < 1:
+              raise SystemExit(
+                  "Could not find Android versionCode/versionName "
+                  f"(versionCode declarations: {code_count}, versionName declarations: {name_count})"
+              )
           gradle_path.write_text("\n".join(gradle_lines) + "\n", encoding="utf-8")
+          print(
+              "Android version declarations normalized to 0.8.8a "
+              f"(updated {code_count} versionCode and {name_count} versionName entries)."
+          )
 
           cmake_path = Path(sys.argv[2])
           cmake_lines = cmake_path.read_text(encoding="utf-8").splitlines()
