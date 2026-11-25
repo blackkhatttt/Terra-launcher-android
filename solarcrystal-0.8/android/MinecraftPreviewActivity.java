@@ -35,7 +35,7 @@ public final class MinecraftPreviewActivity extends Activity {
         FrameLayout root = new FrameLayout(this);
         surface = new GLSurfaceView(this);
         surface.setEGLContextClientVersion(2);
-        renderer = new MinecraftPreviewRenderer();
+        renderer = new RubyDungVoxelRenderer();
         surface.setRenderer(renderer);
         surface.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
         surface.setOnTouchListener((view, event) -> handlePreviewTouch(event));
