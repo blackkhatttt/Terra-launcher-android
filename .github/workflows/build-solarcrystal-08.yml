@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.9.9 - Voxel Mesh Generator
+name: Build Universe Launcher 0.9.10 - OpenGL ES Voxel Renderer
 # Keep Java string escapes intact in the 0.9.8 Android integration.
 # Retry after making legacy Gradle version normalization tolerant of multiple declarations.
 
@@ -19,7 +19,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.9.9
+    name: Build and verify SolarCrystal 0.9.10
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -703,7 +703,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.9.9
+          name: Universe-Launcher-SolarCrystal-0.9.10
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
