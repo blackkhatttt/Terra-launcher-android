@@ -52,11 +52,15 @@ if 'android:glEsVersion="0x00020000"' not in manifest_text:
 activity = (app / "MinecraftPreviewActivity.java").read_text(encoding="utf-8")
 renderer = (app / "RubyDungVoxelRenderer.java").read_text(encoding="utf-8")
 for marker in ('actionButton("BREAK")', 'actionButton("PLACE")',
-               'actionButton("BLOCK")', 'actionButton("JUMP")'):
+               'actionButton("BLOCK")', 'actionButton("JUMP")',
+               'class JoystickOverlay extends View', 'drawStick(canvas, leftCenterX',
+               'drawStick(canvas, rightCenterX', 'MotionEvent.ACTION_POINTER_DOWN'):
     if marker not in activity:
         raise SystemExit(f"Missing Android touch control: {marker}")
 for marker in ("void breakBlock()", "void placeBlock()", "void nextBlock()",
-               "world.pick(origin, direction, 6.0)", "GLES20.glBufferData"):
+               "void setLookInput(float horizontal, float vertical)",
+               "player.rotate(lookHorizontal", "world.pick(origin, direction, 6.0)",
+               "GLES20.glBufferData"):
     if marker not in renderer:
         raise SystemExit(f"Missing voxel interaction implementation: {marker}")
 print("SolarCrystal 0.9.12 touch controls and voxel block interaction integrated.")
