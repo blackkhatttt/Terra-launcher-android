@@ -8,6 +8,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Button;
 import android.opengl.GLSurfaceView;
@@ -38,21 +39,46 @@ public final class MinecraftPreviewActivity extends Activity {
         surface.setOnTouchListener((view, event) -> handleTouch(event));
         root.addView(surface, new FrameLayout.LayoutParams(-1, -1));
 
-        TextView title = label("SOLARCRYSTAL 0.9.11  •  FIRST-PERSON VOXEL TEST");
+        TextView title = label("SOLARCRYSTAL 0.9.12  •  VOXEL INTERACTION TEST");
         root.addView(title, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP));
-
         TextView help = label("LEFT SIDE: MOVE  •  RIGHT SIDE: LOOK");
-        FrameLayout.LayoutParams helpParams = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
-        root.addView(help, helpParams);
+        root.addView(help, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
 
-        Button jump = new Button(this);
-        jump.setText("JUMP");
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        actions.setGravity(Gravity.CENTER);
+        actions.setPadding(6, 4, 6, 4);
+        actions.setBackgroundColor(0x99000000);
+        Button breakButton = actionButton("BREAK");
+        Button placeButton = actionButton("PLACE");
+        Button blockButton = actionButton("BLOCK");
+        actions.addView(breakButton);
+        actions.addView(placeButton);
+        actions.addView(blockButton);
+        FrameLayout.LayoutParams actionsParams = new FrameLayout.LayoutParams(
+            -2, -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+        actionsParams.setMargins(0, 0, 0, 42);
+        root.addView(actions, actionsParams);
+        breakButton.setOnClickListener(v -> surface.queueEvent(() -> renderer.breakBlock()));
+        placeButton.setOnClickListener(v -> surface.queueEvent(() -> renderer.placeBlock()));
+        blockButton.setOnClickListener(v -> surface.queueEvent(() -> renderer.nextBlock()));
+
+        Button jump = actionButton("JUMP");
         FrameLayout.LayoutParams jumpParams = new FrameLayout.LayoutParams(-2, -2,
             Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        jumpParams.setMargins(0, 0, 18, 0);
+        jumpParams.setMargins(0, 0, 12, 0);
         root.addView(jump, jumpParams);
         jump.setOnClickListener(v -> surface.queueEvent(() -> renderer.jump()));
         setContentView(root);
+    }
+
+    private Button actionButton(String value) {
+        Button button = new Button(this);
+        button.setText(value);
+        button.setTextSize(11);
+        button.setMinWidth(72);
+        button.setPadding(8, 4, 8, 4);
+        return button;
     }
 
     private TextView label(String value) {
