@@ -37,7 +37,7 @@ final class RubyDungVoxelRenderer implements GLSurfaceView.Renderer {
     private RubyDungBlockWorld world;
     private static final String[] PLACEABLE = { "grass", "dirt", "stone", "wood", "leaves" };
     private int selectedBlock;
-    private volatile float forwardInput, strafeInput;
+    private volatile float forwardInput, strafeInput;\n    private volatile float lookHorizontal, lookVertical;
     private volatile boolean jumpRequested;
     private long lastFrameNanos;
 
@@ -63,7 +63,7 @@ final class RubyDungVoxelRenderer implements GLSurfaceView.Renderer {
         forwardInput = Math.max(-1f, Math.min(1f, forward));
         strafeInput = Math.max(-1f, Math.min(1f, strafe));
     }
-    void jump() { jumpRequested = true; }
+    void jump() { jumpRequested = true; }\n    void setLookInput(float horizontal, float vertical) {\n        lookHorizontal = Math.max(-1f, Math.min(1f, horizontal));\n        lookVertical = Math.max(-1f, Math.min(1f, vertical));\n    }
     void rotate(float yawDelta, float pitchDelta) {
         player.rotate(yawDelta, pitchDelta);
     }
@@ -160,7 +160,7 @@ final class RubyDungVoxelRenderer implements GLSurfaceView.Renderer {
         long now = System.nanoTime();
         double dt = Math.min(0.05, Math.max(0.0, (now - lastFrameNanos) / 1_000_000_000.0));
         lastFrameNanos = now;
-        player.tick(forwardInput, strafeInput, jumpRequested, dt);
+        player.tick(forwardInput, strafeInput, jumpRequested, dt);\n        player.rotate(lookHorizontal * (float) (125.0 * dt),\n            -lookVertical * (float) (105.0 * dt));
         jumpRequested = false;
 
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
