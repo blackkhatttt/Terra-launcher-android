@@ -8,6 +8,7 @@ import com.universe.solarcrystal.RubyDungVoxelMeshData;
 import com.universe.solarcrystal.RubyDungVoxelMesher;
 import com.universe.solarcrystal.RubyDungVoxelBlockWorldFactory;
 import com.universe.solarcrystal.RubyDungVoxelPlayerController;
+import com.universe.solarcrystal.RubyDungRayPicker;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
