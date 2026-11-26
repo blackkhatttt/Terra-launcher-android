@@ -433,8 +433,8 @@ jobs:
           echo "JAR reader, class inspector and reference constructor runtime integrated."
           cd "$PROJECT_DIR"
           python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_vm_088d.py"
-          grep -q "DRAG TO ROTATE" terra-android/src/main/java/com/terra/android/MinecraftPreviewActivity.java
-          grep -q "zoomBy" terra-android/src/main/java/com/terra/android/MinecraftPreviewRenderer.java
+          grep -q "FIRST-PERSON VOXEL TEST" terra-android/src/main/java/com/terra/android/MinecraftPreviewActivity.java
+          grep -q "RubyDungVoxelRenderer" terra-android/src/main/java/com/terra/android/MinecraftPreviewActivity.java
           grep -q "versionCode 10" terra-android/build.gradle
           grep -q "versionName '0.8.8d'" terra-android/build.gradle
           echo "SolarCrystal 0.8.8d interactive touch preview integrated."
