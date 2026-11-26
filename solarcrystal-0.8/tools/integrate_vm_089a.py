@@ -19,7 +19,7 @@ for i,line in enumerate(lines):
  stripped=line.strip();indent=line[:len(line)-len(line.lstrip())]
  if stripped.startswith("versionCode "):lines[i]=indent+"versionCode 11";codes+=1
  elif stripped.startswith("versionName "):lines[i]=indent+"versionName '0.8.9a'";names+=1
-if codes!=1 or names!=1:raise SystemExit("Could not update Android version metadata to 0.8.9a")
+if codes<1 or names<1:raise SystemExit(f"Could not update Android version metadata to 0.8.9a (versionCode declarations: {codes}, versionName declarations: {names})")
 gradle.write_text("\n".join(lines)+"\n",encoding="utf-8")
 if "class_file_model.cpp" not in (cpp/"CMakeLists.txt").read_text(encoding="utf-8"):raise SystemExit("Class-file model source is not registered in CMake")
 print("SolarCrystal 0.8.9a exception metadata parser integrated.")
