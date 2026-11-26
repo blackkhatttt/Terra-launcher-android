@@ -1,5 +1,5 @@
-# SolarCrystal 0.9.11 first-person voxel exploration
-name: Build Universe Launcher 0.9.11 - First-Person Voxel Exploration
+# SolarCrystal 0.9.12 touch block interaction
+name: Build Universe Launcher 0.9.12 - Touch Block Interaction
 # Keep Java string escapes intact in the 0.9.8 Android integration.
 # Retry after making legacy Gradle version normalization tolerant of multiple declarations.
 
@@ -20,7 +20,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.9.11
+    name: Build and verify SolarCrystal 0.9.12
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -574,6 +574,16 @@ jobs:
           grep -q "versionCode 32" "$PROJECT_DIR/terra-android/build.gradle"
           grep -q "versionName '0.9.11'" "$PROJECT_DIR/terra-android/build.gradle"
           echo "SolarCrystal 0.9.11 first-person voxel exploration integrated."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_rubydung_0912.py"
+          grep -q 'versionCode 33' "$PROJECT_DIR/terra-android/build.gradle"
+          grep -q "versionName '0.9.12'" "$PROJECT_DIR/terra-android/build.gradle"
+          grep -q 'actionButton("BREAK")' "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MinecraftPreviewActivity.java"
+          grep -q 'actionButton("PLACE")' "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MinecraftPreviewActivity.java"
+          grep -q 'actionButton("BLOCK")' "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MinecraftPreviewActivity.java"
+          grep -q 'void breakBlock()' "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/RubyDungVoxelRenderer.java"
+          grep -q 'void placeBlock()' "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/RubyDungVoxelRenderer.java"
+          echo "SolarCrystal 0.9.12 touch buttons and dynamic block interaction integrated."
+
 
 
 
@@ -724,7 +734,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.9.11
+          name: Universe-Launcher-SolarCrystal-0.9.12
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
