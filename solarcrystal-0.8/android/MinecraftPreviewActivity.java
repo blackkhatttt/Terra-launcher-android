@@ -9,21 +9,18 @@ import android.view.View;
 import android.view.Window;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.Button;
 import android.opengl.GLSurfaceView;
 
 public final class MinecraftPreviewActivity extends Activity {
     private GLSurfaceView surface;
     private RubyDungVoxelRenderer renderer;
-    private float lastX, lastY, lastPinchDistance;
-    private float cameraYaw = 38f, cameraPitch = 28f;
-    private boolean dragging;
+    private float downX, downY;
+    private boolean moving, looking;
     private static final int IMMERSIVE_FLAGS =
-        View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-        | View.SYSTEM_UI_FLAG_FULLSCREEN
-        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
+        View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN
+        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -38,101 +35,79 @@ public final class MinecraftPreviewActivity extends Activity {
         renderer = new RubyDungVoxelRenderer();
         surface.setRenderer(renderer);
         surface.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
-        surface.setOnTouchListener((view, event) -> handlePreviewTouch(event));
+        surface.setOnTouchListener((view, event) -> handleTouch(event));
         root.addView(surface, new FrameLayout.LayoutParams(-1, -1));
 
-        TextView title = new TextView(this);
-        title.setText("UNIVERSE LAUNCHER  •  OPENGL ES VOXEL MESH TEST");
-        title.setTextColor(Color.WHITE);
-        title.setTextSize(12);
-        title.setPadding(16, 10, 16, 10);
-        title.setBackgroundColor(0x88000000);
+        TextView title = label("SOLARCRYSTAL 0.9.11  •  FIRST-PERSON VOXEL TEST");
         root.addView(title, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP));
 
-        TextView footer = new TextView(this);
-        footer.setText("SOLARCRYSTAL 0.9.10  |  DRAG TO ROTATE  •  PINCH TO ZOOM");
-        footer.setTextColor(Color.WHITE);
-        footer.setTextSize(10);
-        footer.setPadding(12, 8, 12, 8);
-        footer.setBackgroundColor(0x88000000);
-        root.addView(footer, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
+        TextView help = label("LEFT SIDE: MOVE  •  RIGHT SIDE: LOOK");
+        FrameLayout.LayoutParams helpParams = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
+        root.addView(help, helpParams);
+
+        Button jump = new Button(this);
+        jump.setText("JUMP");
+        FrameLayout.LayoutParams jumpParams = new FrameLayout.LayoutParams(-2, -2,
+            Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        jumpParams.setMargins(0, 0, 18, 0);
+        root.addView(jump, jumpParams);
+        jump.setOnClickListener(v -> surface.queueEvent(() -> renderer.jump()));
         setContentView(root);
     }
 
-    private boolean handlePreviewTouch(MotionEvent event) {
+    private TextView label(String value) {
+        TextView text = new TextView(this);
+        text.setText(value);
+        text.setTextColor(Color.WHITE);
+        text.setTextSize(11);
+        text.setPadding(14, 10, 14, 10);
+        text.setBackgroundColor(0x88000000);
+        return text;
+    }
+
+    private boolean handleTouch(MotionEvent event) {
         int action = event.getActionMasked();
         if (action == MotionEvent.ACTION_DOWN) {
-            lastX = event.getX();
-            lastY = event.getY();
-            dragging = true;
-            return true;
-        }
-        if (action == MotionEvent.ACTION_POINTER_DOWN) {
-            if (event.getPointerCount() >= 2)
-                lastPinchDistance = pointerDistance(event);
-            dragging = false;
+            downX = event.getX();
+            downY = event.getY();
+            moving = downX < surface.getWidth() * 0.5f;
+            looking = !moving;
             return true;
         }
         if (action == MotionEvent.ACTION_MOVE) {
-            if (event.getPointerCount() >= 2) {
-                float nextDistance = pointerDistance(event);
-                if (lastPinchDistance > 0f && nextDistance > 0f) {
-                    float scale = nextDistance / lastPinchDistance;
-                    surface.queueEvent(() -> renderer.zoomBy(scale));
-                }
-                lastPinchDistance = nextDistance;
-            } else if (dragging) {
-                float x = event.getX();
-                float y = event.getY();
-                float dx = x - lastX;
-                float dy = y - lastY;
-                cameraYaw += dx * 0.45f;
-                cameraPitch -= dy * 0.30f;
-                cameraPitch = Math.max(12f, Math.min(65f, cameraPitch));
-                final float yaw = cameraYaw;
-                final float pitch = cameraPitch;
-                surface.queueEvent(() -> renderer.setOrbit(yaw, pitch));
-                lastX = x;
-                lastY = y;
-            }
-            return true;
-        }
-        if (action == MotionEvent.ACTION_POINTER_UP) {
-            lastPinchDistance = 0f;
-            if (event.getPointerCount() > 1) {
-                int remaining = event.getActionIndex() == 0 ? 1 : 0;
-                lastX = event.getX(remaining);
-                lastY = event.getY(remaining);
-                dragging = true;
+            float dx = event.getX() - downX;
+            float dy = event.getY() - downY;
+            if (moving) {
+                float forward = Math.max(-1f, Math.min(1f, -dy / 90f));
+                float strafe = Math.max(-1f, Math.min(1f, dx / 90f));
+                surface.queueEvent(() -> renderer.setMovement(forward, strafe));
+            } else if (looking) {
+                float yawDelta = dx * 0.18f;
+                float pitchDelta = -dy * 0.14f;
+                surface.queueEvent(() -> renderer.rotate(yawDelta, pitchDelta));
+                downX = event.getX();
+                downY = event.getY();
             }
             return true;
         }
         if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-            dragging = false;
-            lastPinchDistance = 0f;
+            if (moving) surface.queueEvent(() -> renderer.setMovement(0f, 0f));
+            moving = false;
+            looking = false;
             return true;
         }
         return true;
-    }
-
-    private static float pointerDistance(MotionEvent event) {
-        if (event.getPointerCount() < 2) return 0f;
-        float dx = event.getX(0) - event.getX(1);
-        float dy = event.getY(0) - event.getY(1);
-        return (float) Math.sqrt(dx * dx + dy * dy);
     }
 
     @Override public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) getWindow().getDecorView().setSystemUiVisibility(IMMERSIVE_FLAGS);
     }
-
     @Override protected void onResume() {
         super.onResume();
         if (surface != null) surface.onResume();
         getWindow().getDecorView().setSystemUiVisibility(IMMERSIVE_FLAGS);
     }
-
     @Override protected void onPause() {
         if (surface != null) surface.onPause();
         super.onPause();
