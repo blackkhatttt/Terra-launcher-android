@@ -1,3 +1,4 @@
+# SolarCrystal 0.9.11 first-person voxel exploration
 name: Build Universe Launcher 0.9.11 - First-Person Voxel Exploration
 # Keep Java string escapes intact in the 0.9.8 Android integration.
 # Retry after making legacy Gradle version normalization tolerant of multiple declarations.
