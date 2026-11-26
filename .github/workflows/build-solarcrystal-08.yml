@@ -1,4 +1,4 @@
-name: Build Universe Launcher 0.9.10 - OpenGL ES Voxel Renderer
+name: Build Universe Launcher 0.9.11 - First-Person Voxel Exploration
 # Keep Java string escapes intact in the 0.9.8 Android integration.
 # Retry after making legacy Gradle version normalization tolerant of multiple declarations.
 
@@ -19,7 +19,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify SolarCrystal 0.9.10
+    name: Build and verify SolarCrystal 0.9.11
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 0.8 branch
@@ -567,7 +567,27 @@ jobs:
           grep -q "versionCode 31" "$PROJECT_DIR/terra-android/build.gradle"
           grep -q "versionName '0.9.10'" "$PROJECT_DIR/terra-android/build.gradle"
           echo "SolarCrystal 0.9.10 OpenGL ES voxel mesh renderer integrated."
+          python3 "$GITHUB_WORKSPACE/solarcrystal-0.8/tools/integrate_rubydung_0911.py"
+          grep -q "RubyDungVoxelPlayerController" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/RubyDungVoxelRenderer.java"
+          grep -q "FIRST-PERSON VOXEL TEST" "$PROJECT_DIR/terra-android/src/main/java/com/terra/android/MinecraftPreviewActivity.java"
+          grep -q "versionCode 32" "$PROJECT_DIR/terra-android/build.gradle"
+          grep -q "versionName '0.9.11'" "$PROJECT_DIR/terra-android/build.gradle"
+          echo "SolarCrystal 0.9.11 first-person voxel exploration integrated."
 
+
+
+      - name: Test first-person voxel player controller 0.9.11
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/voxel-player/classes"
+          javac --release 8 -Xlint:all -Werror -d "$RUNNER_TEMP/voxel-player/classes" \
+            solarcrystal-0.8/src/main/java/com/universe/solarcrystal/RubyDungRayPicker.java \
+            solarcrystal-0.8/src/main/java/com/universe/solarcrystal/RubyDungPickingScene.java \
+            solarcrystal-0.8/src/main/java/com/universe/solarcrystal/RubyDungBlockWorld.java \
+            solarcrystal-0.8/src/main/java/com/universe/solarcrystal/RubyDungVoxelPlayerController.java \
+            solarcrystal-0.8/tests/RubyDungVoxelPlayerControllerTest.java
+          java -cp "$RUNNER_TEMP/voxel-player/classes" RubyDungVoxelPlayerControllerTest
 
       # 0.8.9f validation gate: archive integrity, CAFEBABE headers and repeat scans.
       - name: Run Infdev JAR preflight and repeat-scan diagnostics
@@ -703,7 +723,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Universe-Launcher-SolarCrystal-0.9.10
+          name: Universe-Launcher-SolarCrystal-0.9.11
           path: ${{ env.PROJECT_DIR }}/terra-android/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
