@@ -39,7 +39,7 @@ public final class MinecraftPreviewActivity extends Activity {
         surface.setOnTouchListener((view, event) -> handleTouch(event));
         root.addView(surface, new FrameLayout.LayoutParams(-1, -1));
 
-        TextView title = label("SOLARCRYSTAL 0.9.12  •  VOXEL INTERACTION TEST");
+        TextView title = label("SOLARCRYSTAL 0.9.12  •  FIRST-PERSON VOXEL TEST");
         root.addView(title, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP));
         TextView help = label("LEFT SIDE: MOVE  •  RIGHT SIDE: LOOK");
         root.addView(help, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
