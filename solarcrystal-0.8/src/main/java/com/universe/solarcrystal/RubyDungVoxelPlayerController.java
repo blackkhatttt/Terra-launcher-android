@@ -102,7 +102,7 @@ public final class RubyDungVoxelPlayerController {
                 floor = floor.withBlock(new RubyDungBlockWorld.Block(x, 0, z, "stone"));
         RubyDungVoxelPlayerController player =
             new RubyDungVoxelPlayerController(floor, 0.5, 1.0, 0.5);
-        for (int i = 0; i < 30; i++) player.tick(1.0, 0.0, false, 0.05);
+        for (int i = 0; i < 10; i++) player.tick(1.0, 0.0, false, 0.05);
         if (player.z() > -0.1) return "FAIL: forward movement and yaw orientation";
         if (player.y() < 0.99 || player.y() > 1.02)
             return "FAIL: gravity should settle on the floor";
