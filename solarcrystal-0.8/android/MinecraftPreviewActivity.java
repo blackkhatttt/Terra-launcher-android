@@ -186,7 +186,7 @@ public final class MinecraftPreviewActivity extends Activity {
                 invalidate();
                 return true;
             }
-            if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+            if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_POINTER_UP) {
                 active = false;
                 knobX = centerX;
                 knobY = centerY;
