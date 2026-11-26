@@ -33,12 +33,15 @@ final class RubyDungVoxelRenderer implements GLSurfaceView.Renderer {
     private final float[] view = new float[16];
     private final float[] mvp = new float[16];
     private RubyDungVoxelPlayerController player;
+    private RubyDungBlockWorld world;
+    private static final String[] PLACEABLE = { "grass", "dirt", "stone", "wood", "leaves" };
+    private int selectedBlock;
     private volatile float forwardInput, strafeInput;
     private volatile boolean jumpRequested;
     private long lastFrameNanos;
 
     RubyDungVoxelRenderer() {
-        RubyDungBlockWorld world = new RubyDungVoxelBlockWorldFactory().createTestWorld();
+        world = new RubyDungVoxelBlockWorldFactory().createTestWorld();
         player = new RubyDungVoxelPlayerController(world, 0.5, 5.0, 0.5);
         RubyDungVoxelMeshData data = RubyDungVoxelMeshData.from(RubyDungVoxelMesher.build(world));
         FloatBuffer positions = floats(data.positions());
@@ -62,6 +65,69 @@ final class RubyDungVoxelRenderer implements GLSurfaceView.Renderer {
     void jump() { jumpRequested = true; }
     void rotate(float yawDelta, float pitchDelta) {
         player.rotate(yawDelta, pitchDelta);
+    }
+
+
+    void breakBlock() {
+        RubyDungBlockWorld.Selection hit = aimedBlock();
+        if (hit == null) return;
+        world = world.withoutBlock(hit.block.x, hit.block.y, hit.block.z);
+        rebuildMesh();
+    }
+
+    void placeBlock() {
+        RubyDungBlockWorld.Selection hit = aimedBlock();
+        if (hit == null) return;
+        double px = hit.point.x - hit.block.x;
+        double py = hit.point.y - hit.block.y;
+        double pz = hit.point.z - hit.block.z;
+        double[] distances = {Math.abs(1.0 - px), Math.abs(px),
+            Math.abs(1.0 - py), Math.abs(py), Math.abs(1.0 - pz), Math.abs(pz)};
+        int face = 0;
+        for (int i = 1; i < distances.length; i++)
+            if (distances[i] < distances[face]) face = i;
+        int[][] offsets = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
+        int bx = hit.block.x + offsets[face][0];
+        int by = hit.block.y + offsets[face][1];
+        int bz = hit.block.z + offsets[face][2];
+        if (world.getBlock(bx, by, bz) != null) return;
+        if (bx >= player.x() - 0.30 && bx <= player.x() + 0.30
+                && by < player.y() + 1.75 && by + 1.0 > player.y()
+                && bz >= player.z() - 0.30 && bz <= player.z() + 0.30) return;
+        world = world.withBlock(new RubyDungBlockWorld.Block(
+            bx, by, bz, PLACEABLE[selectedBlock]));
+        rebuildMesh();
+    }
+
+    void nextBlock() {
+        selectedBlock = (selectedBlock + 1) % PLACEABLE.length;
+    }
+
+    private RubyDungBlockWorld.Selection aimedBlock() {
+        double yaw = Math.toRadians(player.yaw());
+        double pitch = Math.toRadians(player.pitch());
+        RubyDungRayPicker.Vec3 origin = new RubyDungRayPicker.Vec3(
+            player.x(), player.y() + 1.55, player.z());
+        RubyDungRayPicker.Vec3 direction = new RubyDungRayPicker.Vec3(
+            Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch),
+            -Math.cos(yaw) * Math.cos(pitch));
+        return world.pick(origin, direction, 6.0);
+    }
+
+    private void rebuildMesh() {
+        RubyDungVoxelMeshData data = RubyDungVoxelMeshData.from(
+            RubyDungVoxelMesher.build(world));
+        FloatBuffer positions = floats(data.positions());
+        FloatBuffer normals = floats(data.normals());
+        FloatBuffer colors = floats(data.colors());
+        ShortBuffer indices = shorts(data.indices());
+        indexCount = data.indexCount();
+        uploadBuffer(GLES20.GL_ARRAY_BUFFER, buffers[0], positions, positions.capacity() * 4);
+        uploadBuffer(GLES20.GL_ARRAY_BUFFER, buffers[1], normals, normals.capacity() * 4);
+        uploadBuffer(GLES20.GL_ARRAY_BUFFER, buffers[2], colors, colors.capacity() * 4);
+        uploadBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, buffers[3], indices, indices.capacity() * 2);
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
+        GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
     @Override public void onSurfaceCreated(GL10 gl, EGLConfig config) {
