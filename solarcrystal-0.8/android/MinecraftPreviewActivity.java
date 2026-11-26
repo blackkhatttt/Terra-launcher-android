@@ -5,20 +5,21 @@ import android.os.Bundle;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.RectF;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
+import android.opengl.GLSurfaceView;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Button;
-import android.opengl.GLSurfaceView;
 
 public final class MinecraftPreviewActivity extends Activity {
     private GLSurfaceView surface;
     private RubyDungVoxelRenderer renderer;
-    private JoystickOverlay joysticks;
+
     private static final int IMMERSIVE_FLAGS =
         View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN
         | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
@@ -39,18 +40,16 @@ public final class MinecraftPreviewActivity extends Activity {
         surface.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
         root.addView(surface, new FrameLayout.LayoutParams(-1, -1));
 
-        joysticks = new JoystickOverlay();
-        root.addView(joysticks, new FrameLayout.LayoutParams(-1, -1));
-
         TextView title = label("SOLARCRYSTAL 0.9.12  •  FIRST-PERSON VOXEL TEST");
         root.addView(title, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP));
-        TextView help = label("LEFT: MOVE  •  RIGHT: CAMERA");
-        root.addView(help, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
+
+        TextView help = label("LEFT JOYSTICK: MOVE     RIGHT JOYSTICK: LOOK");
+        root.addView(help, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
 
         LinearLayout actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.HORIZONTAL);
         actions.setGravity(Gravity.CENTER);
-        actions.setPadding(6, 4, 6, 4);
+        actions.setPadding(5, 2, 5, 2);
         actions.setBackgroundColor(0x99000000);
         Button breakButton = actionButton("BREAK");
         Button placeButton = actionButton("PLACE");
@@ -60,11 +59,23 @@ public final class MinecraftPreviewActivity extends Activity {
         actions.addView(blockButton);
         FrameLayout.LayoutParams actionsParams = new FrameLayout.LayoutParams(
             -2, -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-        actionsParams.setMargins(0, 0, 0, dp(42));
+        actionsParams.setMargins(0, 0, 0, dp(18));
         root.addView(actions, actionsParams);
         breakButton.setOnClickListener(v -> surface.queueEvent(() -> renderer.breakBlock()));
         placeButton.setOnClickListener(v -> surface.queueEvent(() -> renderer.placeBlock()));
         blockButton.setOnClickListener(v -> surface.queueEvent(() -> renderer.nextBlock()));
+
+        JoystickView moveStick = new JoystickView(false);
+        FrameLayout.LayoutParams moveParams = new FrameLayout.LayoutParams(
+            dp(148), dp(148), Gravity.BOTTOM | Gravity.LEFT);
+        moveParams.setMargins(dp(18), 0, 0, dp(12));
+        root.addView(moveStick, moveParams);
+
+        JoystickView lookStick = new JoystickView(true);
+        FrameLayout.LayoutParams lookParams = new FrameLayout.LayoutParams(
+            dp(148), dp(148), Gravity.BOTTOM | Gravity.RIGHT);
+        lookParams.setMargins(0, 0, dp(18), dp(12));
+        root.addView(lookStick, lookParams);
 
         Button jump = actionButton("JUMP");
         FrameLayout.LayoutParams jumpParams = new FrameLayout.LayoutParams(-2, -2,
@@ -72,6 +83,7 @@ public final class MinecraftPreviewActivity extends Activity {
         jumpParams.setMargins(0, 0, dp(12), 0);
         root.addView(jump, jumpParams);
         jump.setOnClickListener(v -> surface.queueEvent(() -> renderer.jump()));
+
         setContentView(root);
     }
 
@@ -82,9 +94,9 @@ public final class MinecraftPreviewActivity extends Activity {
     private Button actionButton(String value) {
         Button button = new Button(this);
         button.setText(value);
-        button.setTextSize(11);
-        button.setMinWidth(dp(72));
-        button.setPadding(dp(8), dp(4), dp(8), dp(4));
+        button.setTextSize(10);
+        button.setMinWidth(dp(62));
+        button.setPadding(dp(4), 0, dp(4), 0);
         return button;
     }
 
@@ -92,142 +104,99 @@ public final class MinecraftPreviewActivity extends Activity {
         TextView text = new TextView(this);
         text.setText(value);
         text.setTextColor(Color.WHITE);
-        text.setTextSize(11);
-        text.setPadding(dp(14), dp(10), dp(14), dp(10));
+        text.setTextSize(10);
+        text.setGravity(Gravity.CENTER);
+        text.setPadding(dp(8), dp(6), dp(8), dp(6));
         text.setBackgroundColor(0x88000000);
         return text;
     }
 
-    private final class JoystickOverlay extends View {
+    private final class JoystickView extends View {
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private int movePointer = -1;
-        private int lookPointer = -1;
-        private float moveX, moveY, lookX, lookY;
-        private float leftCenterX, rightCenterX, centerY, radius;
+        private final boolean cameraStick;
+        private float centerX, centerY, knobX, knobY, radius;
+        private float lastTouchX, lastTouchY;
+        private boolean active;
 
-        JoystickOverlay() {
+        JoystickView(boolean cameraStick) {
             super(MinecraftPreviewActivity.this);
+            this.cameraStick = cameraStick;
             setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-        }
-
-        private void updateGeometry() {
-            radius = dp(58);
-            leftCenterX = Math.max(radius + dp(18), getWidth() * 0.16f);
-            rightCenterX = Math.min(getWidth() - radius - dp(18), getWidth() * 0.84f);
-            centerY = getHeight() - dp(122);
         }
 
         @Override protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
-            updateGeometry();
-            drawStick(canvas, leftCenterX, centerY, moveX, moveY, "MOVE");
-            drawStick(canvas, rightCenterX, centerY, lookX, lookY, "LOOK");
-        }
-
-        private void drawStick(Canvas canvas, float cx, float cy,
-                               float x, float y, String caption) {
-            paint.setColor(0x50303030);
+            centerX = getWidth() * 0.5f;
+            centerY = getHeight() * 0.5f;
+            radius = Math.min(getWidth(), getHeight()) * 0.43f;
+            if (!active) {
+                knobX = centerX;
+                knobY = centerY;
+            }
             paint.setStyle(Paint.Style.FILL);
-            canvas.drawCircle(cx, cy, radius, paint);
-            paint.setColor(0x99FFFFFF);
+            paint.setColor(0x55202020);
+            canvas.drawCircle(centerX, centerY, radius, paint);
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(dp(2));
-            canvas.drawCircle(cx, cy, radius, paint);
-            float knobX = cx + x * radius * 0.68f;
-            float knobY = cy + y * radius * 0.68f;
+            paint.setColor(0x99FFFFFF);
+            canvas.drawCircle(centerX, centerY, radius, paint);
             paint.setStyle(Paint.Style.FILL);
-            paint.setColor(0xBBDDEEFF);
-            canvas.drawCircle(knobX, knobY, knobRadius(), paint);
-            paint.setColor(Color.WHITE);
-            paint.setTextAlign(Paint.Align.CENTER);
-            paint.setTextSize(dp(10));
-            canvas.drawText(caption, cx, cy + radius + dp(17), paint);
-        }
-
-        private float knobRadius() { return radius * 0.30f; }
-
-        private int stickAt(float x, float y) {
-            updateGeometry();
-            float dy = y - centerY;
-            if (Math.hypot(x - leftCenterX, dy) <= radius * 1.35f) return 0;
-            if (Math.hypot(x - rightCenterX, dy) <= radius * 1.35f) return 1;
-            return -1;
-        }
-
-        private void setStick(int which, float x, float y) {
-            float cx = which == 0 ? leftCenterX : rightCenterX;
-            float dx = x - cx;
-            float dy = y - centerY;
-            float length = (float) Math.hypot(dx, dy);
-            float max = radius;
-            if (length > max) { dx *= max / length; dy *= max / length; }
-            float nx = dx / max;
-            float ny = dy / max;
-            if (which == 0) {
-                moveX = nx;
-                moveY = ny;
-                surface.queueEvent(() -> renderer.setMovement(-ny, nx));
-            } else {
-                lookX = nx;
-                lookY = ny;
-                surface.queueEvent(() -> renderer.setLookInput(nx, ny));
-            }
-            invalidate();
-        }
-
-        private void releaseStick(int which) {
-            if (which == 0) {
-                movePointer = -1;
-                moveX = moveY = 0f;
-                surface.queueEvent(() -> renderer.setMovement(0f, 0f));
-            } else {
-                lookPointer = -1;
-                lookX = lookY = 0f;
-                surface.queueEvent(() -> renderer.setLookInput(0f, 0f));
-            }
-            invalidate();
+            paint.setColor(active ? 0xDDE6E6E6 : 0xAABBBBBB);
+            canvas.drawCircle(knobX, knobY, radius * 0.42f, paint);
+            paint.setColor(0x66FFFFFF);
+            canvas.drawCircle(knobX, knobY, radius * 0.27f, paint);
         }
 
         @Override public boolean onTouchEvent(MotionEvent event) {
             int action = event.getActionMasked();
-            int index = event.getActionIndex();
-            if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
-                int which = stickAt(event.getX(index), event.getY(index));
-                int pointer = event.getPointerId(index);
-                if (which == 0 && movePointer == -1) {
-                    movePointer = pointer;
-                    setStick(0, event.getX(index), event.getY(index));
-                    return true;
+            if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {
+                float x = event.getX();
+                float y = event.getY();
+                if (action == MotionEvent.ACTION_DOWN) {
+                    active = true;
+                    lastTouchX = x;
+                    lastTouchY = y;
                 }
-                if (which == 1 && lookPointer == -1) {
-                    lookPointer = pointer;
-                    setStick(1, event.getX(index), event.getY(index));
-                    return true;
+                float dx = x - centerX;
+                float dy = y - centerY;
+                float distance = (float) Math.sqrt(dx * dx + dy * dy);
+                float limit = Math.max(1f, radius);
+                if (distance > limit) {
+                    dx = dx * limit / distance;
+                    dy = dy * limit / distance;
                 }
-                return movePointer != -1 || lookPointer != -1;
-            }
-            if (action == MotionEvent.ACTION_MOVE) {
-                for (int i = 0; i < event.getPointerCount(); i++) {
-                    int pointer = event.getPointerId(i);
-                    if (pointer == movePointer)
-                        setStick(0, event.getX(i), event.getY(i));
-                    else if (pointer == lookPointer)
-                        setStick(1, event.getX(i), event.getY(i));
+                knobX = centerX + dx;
+                knobY = centerY + dy;
+
+                if (cameraStick) {
+                    float deltaX = x - lastTouchX;
+                    float deltaY = y - lastTouchY;
+                    if (action == MotionEvent.ACTION_MOVE && (deltaX != 0 || deltaY != 0)) {
+                        float yaw = deltaX * 0.24f;
+                        float pitch = -deltaY * 0.24f;
+                        surface.queueEvent(() -> renderer.rotate(yaw, pitch));
+                    }
+                } else {
+                    final float forward = -dy / limit;
+                    final float strafe = dx / limit;
+                    surface.queueEvent(() -> renderer.setMovement(forward, strafe));
                 }
-                return movePointer != -1 || lookPointer != -1;
-            }
-            if (action == MotionEvent.ACTION_POINTER_UP || action == MotionEvent.ACTION_UP) {
-                int pointer = event.getPointerId(index);
-                if (pointer == movePointer) releaseStick(0);
-                if (pointer == lookPointer) releaseStick(1);
+                lastTouchX = x;
+                lastTouchY = y;
+                invalidate();
                 return true;
             }
-            if (action == MotionEvent.ACTION_CANCEL) {
-                if (movePointer != -1) releaseStick(0);
-                if (lookPointer != -1) releaseStick(1);
+            if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                active = false;
+                knobX = centerX;
+                knobY = centerY;
+                if (!cameraStick) {
+                    surface.queueEvent(() -> renderer.setMovement(0f, 0f));
+                }
+                invalidate();
                 return true;
             }
-            return movePointer != -1 || lookPointer != -1;
+            return true;
         }
     }
 
